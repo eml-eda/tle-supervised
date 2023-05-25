@@ -3,7 +3,7 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,c
 
 Data_old/
-
+Data/
 ### C ###
 # Prerequisites
 *.d
