@@ -35,10 +35,8 @@ def compute_accuracy(y_test, y_predicted):
     print("MAE%:", mape)
 
 def algorithm(data, labels, number_of_features):
-    X_car = SelectKBest(f_regression, k = number_of_features).fit_transform(data, labels["y_car"])
-    X_camion = SelectKBest(f_regression, k = number_of_features).fit_transform(data, labels["y_camion"])
-    X_train_car, X_test_car, y_train_car, y_test_car = train_test_split(X_car, labels["y_car"])
-    X_train_camion, X_test_camion, y_train_camion, y_test_camion = train_test_split(X_camion, labels["y_camion"])
+    X_car = SelectKBest(f_regression, k = number_of_features).fit_transform(data, labels)
+    X_train_car, X_test_car, y_train_car, y_test_car = train_test_split(X_car, labels)
     steps_svr = [( 'scaler', StandardScaler() ), ('svr', SVR(kernel = 'rbf',epsilon=0.1, C=10))]
 
     pipeline_svr_car = Pipeline(steps_svr)
@@ -48,15 +46,15 @@ def algorithm(data, labels, number_of_features):
     print("CARS Prediction")
     compute_accuracy(y_test_car, y_predicted_car)
     
-    pipeline_svr_camion = Pipeline(steps_svr)
-    pipeline_svr_camion.fit(X_train_camion,y_train_camion)
-    y_predicted_camion = pipeline_svr_camion.predict(X_test_camion)
-    ### METRICHE MISURA ACCURATEZZA PER CAMION
-    print("CAMIONS Prediction")
-    compute_accuracy(y_test_camion, y_predicted_camion)
+    # pipeline_svr_camion = Pipeline(steps_svr)
+    # pipeline_svr_camion.fit(X_train_camion,y_train_camion)
+    # y_predicted_camion = pipeline_svr_camion.predict(X_test_camion)
+    # ### METRICHE MISURA ACCURATEZZA PER CAMION
+    # print("CAMIONS Prediction")
+    # compute_accuracy(y_test_camion, y_predicted_camion)
 
-def main_classical(directory):
-    data, labels = get_data(directory, window_sec_size = 60, shift_sec_size = 2)
+def main_classical(directory, car):
+    data, labels = get_data(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "time", car = car)
     algorithm(data, labels, number_of_features = 50)
 
 def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camion'):
@@ -143,5 +141,5 @@ def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camio
 
 if __name__ == "__main__":
     dir = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/"
-    main_classical(dir)
-    main_autoencoder(dir, pretrain = True, finetune = True, car = 'y_camion')
+    main_classical(dir, car = 'y_camion')
+    # main_autoencoder(dir, pretrain = True, finetune = True, car = 'y_camion')

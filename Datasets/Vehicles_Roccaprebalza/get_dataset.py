@@ -27,11 +27,13 @@ def featureExtraction(serie, sensNumber):
     }
     return pd.DataFrame(axStatistics)
 
-def get_data(
-        directory,
+def get_data(directory,
         window_sec_size = 60,
-        shift_sec_size = 2):
-    return dataset, labels
+        shift_sec_size = 2,
+        time_frequency = "time",
+        car = 'none'):
+    dataset = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car)
+    return dataset.data, dataset.labels[car]
 
 def get_dataset(
         directory,
@@ -105,9 +107,9 @@ class SHMDataset_Roccaprebalza(Dataset):
                 if self.time_frequency == "time":
                     dataset = pd.concat([dataset, dataset_row],axis=0)
         labels = pd.DataFrame({"y_car": label_car, "y_camion": label_camion})
-        self.min = np.min(np.array(mins))
-        self.max = np.max(np.array(maxs))
         if self.time_frequency == 'frequency':
+            self.min = np.min(np.array(mins))
+            self.max = np.max(np.array(maxs))
             for i in np.arange(len(dataset)):
                 dataset[i] = self._normalizer(dataset[i]).type(torch.float16)
         return dataset, labels
