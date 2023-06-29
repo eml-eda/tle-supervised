@@ -35,9 +35,9 @@ def get_data(directory,
                 isEvaluation,
                 sensor,
                 time_frequency)
-    sampler_train = torch.utils.data.RandomSampler(dataset)
     data_loader_train = torch.utils.data.DataLoader(
-        dataset, sampler=sampler_train,
+        dataset, 
+        shuffle = False,
         batch_size=1,
         num_workers=1,
         pin_memory='store_true',
@@ -80,13 +80,15 @@ class SHMDataset(Dataset):
     def __init__(self, data_path, isPreTrain, isFineTuning, isEvaluation, sensor, time_frequency):
         if isPreTrain:
             self.start_time, self.end_time = "05/12/2021 00:00", "05/12/2021 23:59" #"05/12/2021 00:00", "05/12/2021 23:59"
-            self.start_time, self.end_time = "05/12/2021 04:00", "05/12/2021 04:10" # to test
+            # self.start_time, self.end_time = "05/12/2021 04:00", "05/12/2021 04:10" # to test
             self.datasetSize = 500000
         elif isFineTuning:
             self.start_time, self.end_time = "06/12/2021 00:00", "06/12/2021 11:59" #"06/12/2021 00:00", "06/12/2021 11:59"
+            # self.start_time, self.end_time = "06/12/2021 00:00", "06/12/2021 00:10" # to test
             self.datasetSize = 200000
         elif isEvaluation:
             self.start_time, self.end_time = "06/12/2021 12:00", "06/12/2021 17:59" #"06/12/2021 12:00", "06/12/2021 17:59"
+            # self.start_time, self.end_time = "05/12/2021 12:00", "05/12/2021 12:10" # to test
             self.datasetSize = 50000
         else:
             self.start_time, self.end_time = "06/12/2021 17:59", "06/12/2021 23:59" #"06/12/2021 17:59", "06/12/2021 23:59"
@@ -147,7 +149,6 @@ class SHMDataset(Dataset):
                 ldf.append(df_tmp)
         df = pd.concat(ldf).sort_values(by=['sens_pos', 'ts'])
         df.reset_index(inplace=True, drop=True)
-
         df['ts'] = pd.to_datetime(df['ts'], unit='ms')
         df['Time'] = df['ts'].dt.strftime('%Y-%m-%d %H:%M:00')
         df["zN"] = df["z"]-np.mean(df["z"]) #Eliminate the constant component of the readings

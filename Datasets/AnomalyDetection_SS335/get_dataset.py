@@ -37,11 +37,10 @@ def get_data(directory,
              num_days = 4,
              sensor = 'D6.1.1',
              time_frequency = "time"):
-    torch.multiprocessing.set_sharing_strategy('file_system')
     dataset = get_dataset(directory, starting_date, num_days, sensor, time_frequency)
-    sampler_train = torch.utils.data.RandomSampler(dataset)
     data_loader_train = torch.utils.data.DataLoader(
-        dataset, sampler=sampler_train,
+        dataset,
+        shuffle = False,
         batch_size=1,
         num_workers=1,
         pin_memory='store_true',
@@ -49,8 +48,6 @@ def get_data(directory,
     )
     labels = np.asarray([])
     dataset_final = np.asarray([])
-    import os 
-    os.system("ulimit -n 50000")
     for i, (data, label) in enumerate(data_loader_train): 
         if i == 0:
             dataset_final = np.asarray(data)
@@ -69,8 +66,8 @@ class SHMDataset(Dataset):
         self.sampleRate = 100
         self.frameLength = 198
         self.stepLength = 10
-        self.windowLength= 990
-        self.windowStep = 100
+        self.windowLength = 1190 #500 ## FORMULA TO COMPUTE THE TIME SAMPLES: 1 + (self.windowLength - self.frameLength) / self.stepLength
+        self.windowStep = 100 #500
         self.data, self.limits, self.totalWindows, self.min, self.max = self._partitioner()
 
     def __len__(self):
@@ -80,6 +77,7 @@ class SHMDataset(Dataset):
         start, end, power = self.limits[index]
         slice = self.data[start:end]
         if self.time_frequency == 'time':
+            slice = self._normalizer(slice).type(torch.float16)
             return slice, 0
         elif self.time_frequency == 'frequency':
             frequencies, times, spectrogram = self._transformation(slice)
@@ -93,11 +91,13 @@ class SHMDataset(Dataset):
         print(f'reading CSV files')
         
         ldf = []
-        for x in range(self.num_days):
+        for x in tqdm(range(self.num_days)): # from 40 to 100 seconds per file
             yy, mm, dd = (self.day_start + datetime.timedelta(days=x)).strftime('%Y,%m,%d').split(",")
             date = f"{int(yy)}{int(mm)}{int(dd)}"
             df = pd.read_csv(self.path + f"ss335-acc-{date}.csv")
+            print(f'Read file {x}')
             ldf.append(df.drop(['x','y', "year", "month", "day", "Unnamed: 0"], axis=1))
+            print(f'Dropped axes from file {x}')
         df = pd.concat(ldf).sort_values(by=['sens_pos', 'ts'])
         df = df.reset_index(drop=True)
         new_dict = {
@@ -107,8 +107,8 @@ class SHMDataset(Dataset):
         }
         conv = (1*2.5)*2**-15
         df = df[df["sens_pos"]==self.sensor]
-        for i in tqdm(range(10000)):
-        # for i in tqdm(range(len(df))):
+        # for i in tqdm(range(10000)): to reduce runtime
+        for i in tqdm(range(len(df))):
             row = df["z"].iloc[i]
             data_splited = row.replace("\n", "").replace("[", "").replace("]", "").split(" ")
             #data_splited = df["z"][i].split(" ")
@@ -126,7 +126,7 @@ class SHMDataset(Dataset):
         df_new = pd.DataFrame(new_dict)
         print(f'Finish data reading')
         return df_new
-
+            
     def _partitioner(self):
         sensors = self.data['sens_pos'].unique().tolist()
         print(f'start partitioner')
@@ -161,8 +161,9 @@ class SHMDataset(Dataset):
                 if index in range(v[0], v[1]):
                     start = v[2]+(index-v[0])*self.windowStep
                     filteredSlice = timeData[start: start+self.windowLength]
+                    filteredSlice = filteredSlice - (filteredSlice).mean()
                     signalPower = self.power(filteredSlice)
-                    if signalPower>1.25*10**-6:
+                    if signalPower>(3.125*(10**-6)):
                         cummulator += 1
                         limits[cummulator] = (start, start+self.windowLength, signalPower)
                         slice = timeData[start:start+self.windowLength]
@@ -194,5 +195,5 @@ class SHMDataset(Dataset):
         return spectrogramNorm
 
     def power(self, slice):
-        signalPower = np.sqrt(np.mean(np.array(slice)**2))**2
+        signalPower = np.sum(np.array(slice)**2)/self.windowLength
         return signalPower

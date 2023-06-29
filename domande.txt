@@ -1,9 +1,0 @@
-- che giorni usiamo dell'anomaly detection datasets? 
-- che sensori? dove lo specifichiamo? la creazione del dataset sembra "strana", sembra che concateni tutti i sensori. Ok problema è che consideriamo solo primi 10000 samples. Perchè?? riga 85 get_dataset
-- perchè > 500000 --> anche qua, limita i dati non solo di training, ma di test riga 133 get_dataset
-- sembra che tu abbia usato sensori diversi per giorni diversi dato che usavi i primi 10k samples e non il nome del sensore
-- perchè periodi son diversi da quelli di Amir?
-
-Datasets Sacertis
-- 5/12 non presente, ma nel dataset chiama quel giorno
-- quali sensori utilizzavi? agivano su tutti i sensori?

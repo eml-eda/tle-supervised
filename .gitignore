@@ -4,6 +4,7 @@
 
 Data_old/
 Data/
+Results/
 ### C ###
 # Prerequisites
 *.d
