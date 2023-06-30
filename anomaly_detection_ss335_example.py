@@ -17,7 +17,7 @@ assert timm.__version__ == "0.3.2"  # version check
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 from util.engine_pretrain import train_one_epoch, evaluate
-
+import argparse
 '''
 Maintenance intervention day: 9th
 Train: 24/05, 25/05, 26/05, 27/05
@@ -42,12 +42,12 @@ def plot_results(data, data2 = None, name = "Base.png"):
     plt.ylabel('MSE')
     plt.savefig(name)
 
-def main_PCA(directory):
+def main_PCA(args):
 ### Creating Training Dataset
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
     print("Creating Training Dataset")
-    dataset_train = get_data(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time")
+    dataset_train = get_data(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time", windowLength = args.window_size)
     pca = pca_class(input_dim= 490, CF = 32)
     print("Fitting PCA")
     Ex, Vx, k = pca.fit(dataset_train)
@@ -55,33 +55,33 @@ def main_PCA(directory):
     starting_date = datetime.date(2019,5,10) 
     num_days = 4
     print("Creating Testing Dataset -- Normal")
-    dataset_test_normal = get_data(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time")
+    dataset_test_normal = get_data(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time", windowLength = args.window_size)
     pca_result_normal  = pca.predict(dataset_test_normal, Vx)
 ### Creating Testing Dataset for Anomaly Data
     starting_date = datetime.date(2019,4,17) 
     num_days = 4
     print("Creating Testing Dataset -- Anomaly")
-    dataset_test_anomaly = get_data(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time")
+    dataset_test_anomaly = get_data(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time", windowLength = args.window_size)
     pca_result_anomaly  = pca.predict(dataset_test_anomaly, Vx)
 
-    name = "PCA_All_AllDayTrain"
+    name = f"PCA_{windowLength}samples"
     plot_results(pca_result_anomaly, pca_result_normal, f"{name}.png")
     df = pd.DataFrame.from_dict(pca_result_normal)
     df.to_csv(f'Results/{name}_normal.csv', index = False, header = True)
     df = pd.DataFrame.from_dict(pca_result_anomaly)
     df.to_csv(f'Results/{name}_anomaly.csv', index = False, header = True)
 
-def main_masked_autoencoder(directory):
+def main_masked_autoencoder(args):
     import os
     os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 ### Creating Training 
     lr = 0.25e-3
-    total_epochs = 40
-    warmup_epochs = 20
+    total_epochs = 201
+    warmup_epochs = 50
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
     print("Creating Training Dataset")
-    dataset = get_dataset(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency")
+    dataset = get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = args.window_size)
     sampler_train = torch.utils.data.RandomSampler(dataset)
     data_loader_train = torch.utils.data.DataLoader(
         dataset, sampler=sampler_train,
@@ -111,7 +111,7 @@ def main_masked_autoencoder(directory):
     starting_date = datetime.date(2019,5,10) 
     num_days = 4
     print("Creating Testing Dataset -- Normal")
-    dataset = get_dataset(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency")
+    dataset = get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = args.window_size)
     data_loader_test_normal = torch.utils.data.DataLoader(
         dataset, shuffle=False,
         batch_size=1,
@@ -121,13 +121,13 @@ def main_masked_autoencoder(directory):
     )
     losses_normal = evaluate(data_loader_test_normal, model, device)
     df = pd.DataFrame.from_dict(losses_normal)
-    df.to_csv('Results/masked_test_normal.csv', index = False, header = True)
+    df.to_csv(f'Results/masked_{windowLength}samples_normal.csv', index = False, header = True)
         
 ### Creating Testing Dataset for Anomaly Data
     starting_date = datetime.date(2019,4,17) 
     num_days = 4
     print("Creating Testing Dataset -- Anomaly")
-    dataset = get_dataset(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency")
+    dataset = get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = args.window_size)
     data_loader_test_anomaly = torch.utils.data.DataLoader(
         dataset, shuffle=False,
         batch_size=1,
@@ -137,9 +137,18 @@ def main_masked_autoencoder(directory):
     )
     losses_anomaly = evaluate(data_loader_test_anomaly, model, device)
     df = pd.DataFrame.from_dict(losses_anomaly)
-    df.to_csv('Results/masked_test_anomaly.csv', index = False, header = True)
+    df.to_csv(f'Results/masked_{windowLength}samples_anomaly.csv', index = False, header = True)
 
 if __name__ == "__main__":
-    dir = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/AnomalyDetection_SS335/"
-    main_PCA(dir)
-    # main_masked_autoencoder(dir)
+    parser = argparse.ArgumentParser(description='Base parameters')
+    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/AnomalyDetection_SS335/",
+                        help='directory')
+    parser.add_argument('--model', type=str, default="SOA",
+                        help='SOA, autoencoder')
+    parser.add_argument('--window_size', type=int, default=490, help='fs = 100')
+    args = parser.parse_args()
+    model = args.model 
+    if model == "SOA":
+        main_PCA(args)
+    elif model == "autoencoder":
+        main_masked_autoencoder(args)

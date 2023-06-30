@@ -21,7 +21,7 @@ from util.misc import interpolate_pos_embed
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 from util.engine_pretrain import train_one_epoch, evaluate, train_one_epoch_finetune, evaluate_finetune
-
+import argparse
 def compute_accuracy(y_test, y_predicted):
     mse = mean_squared_error(y_test, y_predicted)
     print("MSE:", mse)
@@ -34,7 +34,7 @@ def compute_accuracy(y_test, y_predicted):
     mape = (mae/np.mean(y_test))*100
     print("MAE%:", mape)
 
-def algorithm(data, labels, number_of_features):
+def algorithm(data, labels, car, number_of_features):
     X_car = SelectKBest(f_regression, k = number_of_features).fit_transform(data, labels)
     X_train_car, X_test_car, y_train_car, y_test_car = train_test_split(X_car, labels)
     steps_svr = [( 'scaler', StandardScaler() ), ('svr', SVR(kernel = 'rbf',epsilon=0.1, C=10))]
@@ -43,7 +43,7 @@ def algorithm(data, labels, number_of_features):
     pipeline_svr_car.fit(X_train_car,y_train_car)
     y_predicted_car = pipeline_svr_car.predict(X_test_car)
     ### METRICHE MISURA ACCURATEZZA PER CAR
-    print("CARS Prediction")
+    print(f"{car} Prediction")
     compute_accuracy(y_test_car, y_predicted_car)
     
     # pipeline_svr_camion = Pipeline(steps_svr)
@@ -53,21 +53,21 @@ def algorithm(data, labels, number_of_features):
     # print("CAMIONS Prediction")
     # compute_accuracy(y_test_camion, y_predicted_camion)
 
-def main_classical(directory, car):
-    data, labels = get_data(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "time", car = car)
-    algorithm(data, labels, number_of_features = 50)
+def main_classical(args):
+    data, labels = get_data(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "time", car = args.car)
+    algorithm(data, labels, args.car, number_of_features = 12)
 
-def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camion'):
+def main_autoencoder(args, pretrain = True, finetune = True):
     import os
     os.environ['CUDA_VISIBLE_DEVICES'] = "3"
     device = torch.device('cuda')
     lr = 0.25e-3
-    total_epochs = 61
-    warmup_epochs = 30
+    total_epochs = 201
+    warmup_epochs = 50
 
 ### Creating Training 
     if pretrain == True:
-        dataset = get_dataset(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = car)
+        dataset = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
         sampler_train = torch.utils.data.RandomSampler(dataset)
         data_loader_train = torch.utils.data.DataLoader(
             dataset, sampler=sampler_train,
@@ -86,11 +86,11 @@ def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camio
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % 10 == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_roccaprebalza")
+                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"{args.car}_roccaprebalza")
     
 ### Creating Finetuning 
     if finetune == True:
-        dataset = get_dataset(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = car)
+        dataset = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
         sampler_test = torch.utils.data.RandomSampler(dataset)
         data_loader_test = torch.utils.data.DataLoader(
             dataset, shuffle=False,
@@ -104,7 +104,7 @@ def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camio
         np.random.seed(0)
         model = audioMae_vit_base_R(norm_pix_loss=True)
         model.to(device)
-        checkpoint = torch.load("Results/checkpoints/checkpoint-vehicles_roccaprebalza-60.pth", map_location='cpu')
+        checkpoint = torch.load(f"Results/checkpoints/checkpoint-{args.car}_roccaprebalza-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -122,7 +122,7 @@ def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camio
         y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
         compute_accuracy(y_test, y_predicted)
 
-        dataset = get_dataset(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = car)
+        dataset = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
         sampler_train = torch.utils.data.RandomSampler(dataset)
         data_loader_finetune = torch.utils.data.DataLoader(
             dataset, sampler=sampler_train,
@@ -134,12 +134,22 @@ def main_autoencoder(directory, pretrain = True, finetune = True, car = 'y_camio
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % 10 == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_sacertis_finetune")
+                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"{args.car}_roccaprebalza_finetune")
 
         y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
         compute_accuracy(y_test, y_predicted)
 
 if __name__ == "__main__":
-    dir = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/"
-    main_classical(dir, car = 'y_camion')
-    # main_autoencoder(dir, pretrain = True, finetune = True, car = 'y_camion')
+    parser = argparse.ArgumentParser(description='Base parameters')
+    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/",
+                        help='directory')
+    parser.add_argument('--model', type=str, default="SOA",
+                        help='SOA, autoencoder')
+    parser.add_argument('--car', type=str, default="y_camion",
+                        help='y_camion, y_car')
+    args = parser.parse_args()
+    model = args.model 
+    if model == "SOA":
+        main_classical(args)
+    elif model == "autoencoder":
+        main_autoencoder(args, pretrain = True, finetune = True)

@@ -5,6 +5,8 @@
 Data_old/
 Data/
 Results/
+logs/
+
 ### C ###
 # Prerequisites
 *.d

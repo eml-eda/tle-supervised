@@ -28,16 +28,18 @@ def get_dataset(directory,
              starting_date = datetime.date(2019,5,24),
              num_days = 4,
              sensor = 'D6.1.1',
-             time_frequency = "time"):
-    dataset = SHMDataset(directory + "./Data/", starting_date, num_days, sensor, time_frequency)
+             time_frequency = "time",
+             windowLength = 1190):
+    dataset = SHMDataset(directory + "./Data/", starting_date, num_days, sensor, time_frequency, windowLength)
     return dataset
 
 def get_data(directory, 
              starting_date = datetime.date(2019,5,24),
              num_days = 4,
              sensor = 'D6.1.1',
-             time_frequency = "time"):
-    dataset = get_dataset(directory, starting_date, num_days, sensor, time_frequency)
+             time_frequency = "time",
+             windowLength = 1190):
+    dataset = get_dataset(directory, starting_date, num_days, sensor, time_frequency, windowLength)
     data_loader_train = torch.utils.data.DataLoader(
         dataset,
         shuffle = False,
@@ -56,18 +58,19 @@ def get_data(directory,
     return dataset_final
 
 class SHMDataset(Dataset):
-    def __init__(self, data_path, date, num_days, sensor, time_frequency):
+    def __init__(self, data_path, date, num_days, sensor, time_frequency, windowLength):
         self.day_start = date
         self.num_days = num_days
         self.path = data_path
         self.sensor = sensor
         self.time_frequency = time_frequency
+        self.th = 3.125*(10**-5)
         self.data = self._readCSV()
         self.sampleRate = 100
         self.frameLength = 198
         self.stepLength = 10
-        self.windowLength = 1190 #500 ## FORMULA TO COMPUTE THE TIME SAMPLES: 1 + (self.windowLength - self.frameLength) / self.stepLength
-        self.windowStep = 100 #500
+        self.windowLength = windowLength #500 ## FORMULA TO COMPUTE THE TIME SAMPLES: 1 + (self.windowLength - self.frameLength) / self.stepLength
+        self.windowStep = 200 #500
         self.data, self.limits, self.totalWindows, self.min, self.max = self._partitioner()
 
     def __len__(self):
@@ -163,7 +166,7 @@ class SHMDataset(Dataset):
                     filteredSlice = timeData[start: start+self.windowLength]
                     filteredSlice = filteredSlice - (filteredSlice).mean()
                     signalPower = self.power(filteredSlice)
-                    if signalPower>(3.125*(10**-6)):
+                    if signalPower>(self.th):
                         cummulator += 1
                         limits[cummulator] = (start, start+self.windowLength, signalPower)
                         slice = timeData[start:start+self.windowLength]

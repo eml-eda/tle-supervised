@@ -21,7 +21,7 @@ from util.misc import interpolate_pos_embed
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
 from util.engine_pretrain import train_one_epoch, evaluate, train_one_epoch_finetune, evaluate_finetune
-
+import argparse
 def compute_accuracy(y_test, y_predicted):
     mse = mean_squared_error(y_test, y_predicted)
     print("MSE:", mse)
@@ -53,8 +53,8 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True):
     os.environ['CUDA_VISIBLE_DEVICES'] = "3"
     device = torch.device('cuda')
     lr = 0.25e-3
-    total_epochs = 41
-    warmup_epochs = 20
+    total_epochs = 201
+    warmup_epochs = 50
 
 ### Creating Training 
     if pretrain == True:
@@ -95,7 +95,7 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True):
         np.random.seed(0)
         model = audioMae_vit_base_R(norm_pix_loss=True)
         model.to(device)
-        checkpoint = torch.load("Results/checkpoints/checkpoint-vehicles_sacertis-0.pth", map_location='cpu')
+        checkpoint = torch.load("Results/checkpoints/checkpoint-vehicles_sacertis-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -131,6 +131,15 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True):
         compute_accuracy(y_test, y_predicted)
 
 if __name__ == "__main__":
-    dir = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/"
-    # main(dir)
-    main_masked_autoencoder(dir, pretrain = False)
+    parser = argparse.ArgumentParser(description='Base parameters')
+    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/",
+                        help='directory')
+    parser.add_argument('--model', type=str, default="SOA",
+                        help='SOA, autoencoder')
+    args = parser.parse_args()
+    dir = args.dir 
+    model = args.model
+    if model == "SOA":
+        main(dir)
+    elif model == "autoencoder":
+        main_masked_autoencoder(dir, pretrain = False)

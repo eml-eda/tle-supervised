@@ -90,8 +90,9 @@ class SHMDataset_Roccaprebalza(Dataset):
                 for sens in data.keys():
                     if "10" in sens and "xyz" not in sens:
                         if self.time_frequency == "time":
-                            features = featureExtraction((data[sens][index:(index + self.window_sec_size * self.fs - 10)].values), sens)
-                            dataset_row = pd.concat([dataset_row, features], axis=1)
+                            if "z10D41" in sens:
+                                features = featureExtraction((data[sens][index:(index + self.window_sec_size * self.fs - 10)].values), sens)
+                                dataset_row = pd.concat([dataset_row, features], axis=1)
                         elif self.time_frequency == 'frequency':
                             if "z10D41" in sens:
                                 features = torch.tensor(data[sens][index:(index + self.window_sec_size * self.fs - 10)].values)
