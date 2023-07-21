@@ -28,11 +28,12 @@ class AudioMaskedAutoencoderViT(nn.Module):
     def __init__(self, num_mels=100, mel_len=100, patch_size=5, in_chans=1,  #COMMENT: original arch encoder_depth=12, decoder_depth=16
                  embed_dim=768, encoder_depth=3, num_heads=12,
                  decoder_embed_dim=512, decoder_depth=4, decoder_num_heads=16,
-                 mlp_ratio=4., norm_layer=nn.LayerNorm, norm_pix_loss=False):
+                 mlp_ratio=4., mask_ratio = 0.8, norm_layer=nn.LayerNorm, norm_pix_loss=False):
         super().__init__()
 
         # --------------------------------------------------------------------------
         # MAE encoder specifics
+        self.mask_ratio = mask_ratio
         self.patch_embed = PatchEmbed((mel_len, num_mels), (patch_size, patch_size), in_chans, embed_dim)
         num_patches = self.patch_embed.num_patches
         self.grid_h = int(mel_len // patch_size)
@@ -226,14 +227,16 @@ class AudioMaskedAutoencoderViT(nn.Module):
 
         loss = (pred - target) ** 2
         loss = loss.mean(dim=-1)  # [N, L], mean loss per patch
-
-        loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+        ##TO DECIDE: I WOULD LIKE TO RECONSTRUCT ALL, THEREFORE I WOULD USE ALL
+        # loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
+        loss = (loss).sum()   # mean loss on removed patches
         return loss
 
     def forward(self, imgs, mask_ratio=0.8):
-        latent, mask, ids_restore = self.forward_encoder(imgs, mask_ratio)
+        latent, mask, ids_restore = self.forward_encoder(imgs, self.mask_ratio)
         pred = self.forward_decoder(latent, ids_restore)  # [N, L, p*p*1]
         loss = self.forward_loss(imgs, pred, mask)
+        pred = self.unpatchify(pred)
         return loss, pred, mask
 
 def audioMae_vit_base_args(**kwargs):

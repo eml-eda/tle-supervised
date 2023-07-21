@@ -20,7 +20,65 @@ import torch
 import torch.distributed as dist
 from torch._six import inf
 import math
+import pathlib
+import random
+import numpy as np
 
+
+class CheckPoint():
+    """
+    save/load a checkpoint based on a metric
+    """
+    def __init__(self, dir, net, optimizer, mode='min', fmt='ck_{epoch:03d}.pt'):
+        if mode not in ['min', 'max']:
+            raise ValueError("Early-stopping mode not supported")
+        self.dir = pathlib.Path(dir)
+        self.dir.mkdir(parents=True, exist_ok=True)
+        self.mode = mode
+        self.format = fmt
+        self.net = net
+        self.optimizer = optimizer
+        self.val = None
+        self.epoch = None
+        self.best_path = None
+
+    def __call__(self, epoch, val):
+        val = float(val)
+        if self.val is None:
+            self.update_and_save(epoch, val)
+        elif self.mode == 'min' and val < self.val:
+            self.update_and_save(epoch, val)
+        elif self.mode == 'max' and val > self.val:
+            self.update_and_save(epoch, val)
+
+    def update_and_save(self, epoch, val):
+        self.epoch = epoch
+        self.val = val
+        self.update_best_path()
+        self.save()
+
+    def update_best_path(self):
+        self.best_path = self.dir / self.format.format(**self.__dict__)
+
+    def save(self, path=None):
+        if path is None:
+            path = self.best_path
+        torch.save({
+                  'epoch': self.epoch,
+                  'model_state_dict': self.net.state_dict(),
+                  'optimizer_state_dict': self.optimizer.state_dict(),
+                  'val': self.val,
+                  }, path)
+
+    def load_best(self):
+        if self.best_path is None:
+            raise FileNotFoundError("Best path not set!")
+        self.load(self.best_path)
+
+    def load(self, path):
+        checkpoint = torch.load(path)
+        self.net.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
 class SmoothedValue(object):
     """Track a series of values and provide access to smoothed values over a
@@ -233,6 +291,15 @@ def adjust_learning_rate(optimizer, epoch, lr, total_epochs, warmup_epochs):
             param_group["lr"] = lr
     return lr
 
+def adjust_learning_rate_finetune(optimizer, epoch, lr, total_epochs, warmup_epochs):
+    """Decay the learning rate with half-cycle cosine after warmup"""
+    lr = lr * 0.5 * (1. + math.cos(math.pi * (epoch) / (total_epochs)))
+    for param_group in optimizer.param_groups:
+        if "lr_scale" in param_group:
+            param_group["lr"] = lr * param_group["lr_scale"]
+        else:
+            param_group["lr"] = lr
+    return lr
 # --------------------------------------------------------
 # Interpolate position embeddings for high-resolution
 # References:

@@ -15,7 +15,7 @@ from typing import Iterable
 import torch
 
 import util.misc as misc
-from util.misc import adjust_learning_rate
+from util.misc import adjust_learning_rate, adjust_learning_rate_finetune
 
 def train_one_epoch(model: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -65,6 +65,19 @@ def evaluate(data_loader, model, device):
     print('* mae1@1 {top1.global_avg:.3f} loss(MSE) {losses.global_avg:.3f}'.format(top1=metric_logger.mae1, losses=metric_logger.loss))
     return losses
 
+@torch.no_grad()
+def reconstruct(data_loader, model, device, index):
+    # switch to evaluation mode
+    model.eval()
+    for i, batch in enumerate(data_loader):
+        if i == index:
+            samples = batch[0]
+            samples = samples.to(device, non_blocking=True)
+            # compute output
+            with torch.cuda.amp.autocast():
+                _, pred, _ = model(samples)
+            break
+    return samples, pred
 
 def train_one_epoch_finetune(model: torch.nn.Module, criterion: torch.nn.Module,
                     data_loader: Iterable, optimizer: torch.optim.Optimizer,
@@ -75,7 +88,7 @@ def train_one_epoch_finetune(model: torch.nn.Module, criterion: torch.nn.Module,
     header = 'Epoch: [{}]'.format(epoch)
     print_freq = 5
     for data_iter_step, (samples, targets) in enumerate(metric_logger.log_every(data_loader, print_freq, header)):
-        adjust_learning_rate(optimizer, data_iter_step / len(data_loader) + epoch, lr, total_epochs, warmup_epochs)
+        adjust_learning_rate_finetune(optimizer, data_iter_step / len(data_loader) + epoch, lr, total_epochs, warmup_epochs)
         samples = samples.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
         with torch.cuda.amp.autocast():
@@ -105,8 +118,8 @@ def evaluate_finetune(data_loader, model, device):
     for batch in metric_logger.log_every(data_loader, 10, header):
         samples = batch[0]
         targets = batch[-1]
-        samples = samples.to(device, non_blocking=True)
-        targets = targets.to(device, non_blocking=True)
+        samples = samples.to(device, non_blocking=False)
+        targets = targets.to(device, non_blocking=False)
         # compute output
         with torch.cuda.amp.autocast():
             outputs = model(samples)
@@ -114,7 +127,7 @@ def evaluate_finetune(data_loader, model, device):
             loss = criterion(outputs, targets)
         mae1 = L1Loss(outputs, targets)
         outputs_vector.append(outputs.cpu().numpy())
-        targets_vector.append(targets.cpu().numpy())
+        targets_vector.append(targets.cpu().numpy()[0])
         batch_size = samples.shape[0]
         metric_logger.update(loss=loss.item())
         metric_logger.meters['mae1'].update(mae1.item(), n=batch_size)

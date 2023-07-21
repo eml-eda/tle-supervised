@@ -21,5 +21,8 @@ if [[ $gpu == "3" ]]; then
     export CUDA_VISIBLE_DEVICES=3
 fi
 
-python vehicles_roccaprebalza_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/ --model autoencoder --car y_car | tee logs/Vehicles_Roccaprebalza_y_car_autoencoder.log
-python vehicles_roccaprebalza_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/ --model autoencoder --car y_camion | tee logs/Vehicles_Roccaprebalza_y_camion_autoencoder.log
+python vehicles_roccaprebalza_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/ --model autoencoder --car y_car --pretrain '' --load_pretrain '' | tee logs/Vehicles_Roccaprebalza_y_car_autoencoder_no_pretrain.log
+python vehicles_roccaprebalza_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/ --model autoencoder --car y_camion --pretrain '' --load_pretrain '' | tee logs/Vehicles_Roccaprebalza_y_camion_autoencoder_no_pretrain.log
+
+python vehicles_roccaprebalza_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/ --model autoencoder --car y_car --pretrain '' | tee logs/Vehicles_Roccaprebalza_y_car_autoencoder.log
+python vehicles_roccaprebalza_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/ --model autoencoder --car y_camion --pretrain '' | tee logs/Vehicles_Roccaprebalza_y_camion_autoencoder.log

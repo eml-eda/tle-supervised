@@ -20,6 +20,8 @@ Fig. Ablation4 Comparison with bar plots with the three tasks -- No pretraining,
 Fig. Ablation5 Bigger models and smaller models (increase/decrease number of blocks)
 Table 2 -- deployment high level tipo suscom?
 
+Add as a second task the compression to send data remotely. Improve privacy. ML models on vehicles can not be used for it. In results, add a seciont where we show the reconstruction.
+
 Anomaly detection -- Window_size --> 12 seconds  (1198 samples) Window_step --> 2 second self.th = 3.125*(10**-5) -- 5 seconds for PCA
 Vehicles Roccaprebalza -- 60 seconds window size, shift 2 seconds -- sensor z10D41
 STILL ERROR IN TESTING ON TRAINING ON THIS DATASET

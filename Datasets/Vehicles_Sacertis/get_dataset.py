@@ -12,6 +12,7 @@ import random
 from scipy import stats
 from scipy import signal
 import json
+import pickle as pkl
 
 def get_dataset(directory, 
                 isPreTrain, 
@@ -93,22 +94,62 @@ class SHMDataset(Dataset):
         else:
             self.start_time, self.end_time = "06/12/2021 17:59", "06/12/2021 23:59" #"06/12/2021 17:59", "06/12/2021 23:59"
             self.datasetSize = 50000
-        self.path = data_path
+        self.directory = data_path
         self.noisySensors = ["C12.1.4", "C17.1.2"]
         self.sensor = sensor
         self.time_frequency = time_frequency
         self.minDuration = 0.25
-        self.data = self._readCSV()
-        self.distanceToSensor = self._readDistanceToSensor()
-        self.sensorVarDict = self._calculateThresholds(isPreTrain=isPreTrain)
-        self.pesaDataDf = self._readLabels()
-        self.labelsDf, self.groupsDf = self._labelAssignment()
         self.sampleRate = 100
         self.frameLength = 198
         self.stepLength = 58
         self.windowLength= 5990
         self.windowStep = 1500
-        self.data, self.limits, self.totalWindows, min, max = self._partitioner()
+        if isPreTrain:
+            if f'vehicles_sacertis_allVariables_PreTrain.pkl' in os.listdir(self.directory):
+                print("Loading Sacertis dataset", end=' ', flush=True)
+                with open(self.directory+f'vehicles_sacertis_allVariables_PreTrain.pkl', "rb") as f:
+                    self.labelsDf, self.groupsDf, self.data, self.limits, self.totalWindows, min, max = pkl.load(f)
+            else:
+                print("Creating Sacertis dataset", end=' ', flush=True)
+                self.data = self._readCSV()
+                self.distanceToSensor = self._readDistanceToSensor()
+                self.sensorVarDict = self._calculateThresholds(isPreTrain=isPreTrain)
+                self.pesaDataDf = self._readLabels()
+                self.labelsDf, self.groupsDf = self._labelAssignment()
+                self.data, self.limits, self.totalWindows, min, max = self._partitioner()
+                with open(self.directory+f'vehicles_sacertis_allVariables_PreTrain.pkl', "wb") as f:
+                    pkl.dump([self.labelsDf, self.groupsDf, self.data, self.limits, self.totalWindows, min, max], f)
+        elif isFineTuning:
+            if f'vehicles_sacertis_allVariables_Finetuning.pkl' in os.listdir(self.directory):
+                print("Loading Sacertis dataset", end=' ', flush=True)
+                with open(self.directory+f'vehicles_sacertis_allVariables_Finetuning.pkl', "rb") as f:
+                    self.labelsDf, self.groupsDf, self.data, self.limits, self.totalWindows, min, max = pkl.load(f)
+            else:
+                print("Creating Sacertis dataset", end=' ', flush=True)
+                self.data = self._readCSV()
+                self.distanceToSensor = self._readDistanceToSensor()
+                self.sensorVarDict = self._calculateThresholds(isPreTrain=isPreTrain)
+                self.pesaDataDf = self._readLabels()
+                self.labelsDf, self.groupsDf = self._labelAssignment()
+                self.data, self.limits, self.totalWindows, min, max = self._partitioner()
+                with open(self.directory+f'vehicles_sacertis_allVariables_Finetuning.pkl', "wb") as f:
+                    pkl.dump([self.labelsDf, self.groupsDf, self.data, self.limits, self.totalWindows, min, max], f)
+        elif isEvaluation:
+            if f'vehicles_sacertis_allVariables_Evaluation.pkl' in os.listdir(self.directory):
+                print("Loading Sacertis dataset", end=' ', flush=True)
+                with open(self.directory+f'vehicles_sacertis_allVariables_Evaluation.pkl', "rb") as f:
+                    self.labelsDf, self.groupsDf, self.data, self.limits, self.totalWindows, min, max = pkl.load(f)
+            else:
+                print("Creating Sacertis dataset", end=' ', flush=True)
+                self.data = self._readCSV()
+                self.distanceToSensor = self._readDistanceToSensor()
+                self.sensorVarDict = self._calculateThresholds(isPreTrain=isPreTrain)
+                self.pesaDataDf = self._readLabels()
+                self.labelsDf, self.groupsDf = self._labelAssignment()
+                self.data, self.limits, self.totalWindows, min, max = self._partitioner()
+                with open(self.directory+f'vehicles_sacertis_allVariables_Evaluation.pkl', "wb") as f:
+                    pkl.dump([self.labelsDf, self.groupsDf, self.data, self.limits, self.totalWindows, min, max], f)
+            
         if isPreTrain: #The statistics are calculated during pre-train, during evaluation and fine-tuning use those from train
             self.min = min
             self.max = max
@@ -138,7 +179,7 @@ class SHMDataset(Dataset):
         end = datetime.strptime(self.end_time, '%d/%m/%Y %H:%M')
 
         ldf = list()
-        for p in tqdm(glob.glob(self.path + "./Data/" + "*.csv")):
+        for p in tqdm(glob.glob(self.directory + "./Data/" + "*.csv")):
             name = os.path.split(p)[-1]
             nstr = datetime.strptime(name, 'traffic_%Y%m%dH%H%M%S.csv')
             if start <= nstr < end:
@@ -161,16 +202,17 @@ class SHMDataset(Dataset):
 
     def _readDistanceToSensor(self):
         distanceToSensor = {}
-        with open(self.path + './distanceToSensor.csv') as f: #File containing distance from each sensor to the scale
+        with open(self.directory + './distanceToSensor.csv') as f: #File containing distance from each sensor to the scale
             for line in f.readlines():
                 sensor, distance = line.replace("'", "").replace("\n","").split(",")
                 distanceToSensor[sensor] = float(distance)
         return distanceToSensor
 
-    def _readLabels(self):
+    def _readLabels(self):        
+        print(f"Entering in function _readLabels", end=' ', flush=True)
         start_time = datetime.strptime(self.start_time, '%d/%m/%Y %H:%M')
         end_time = datetime.strptime(self.end_time, '%d/%m/%Y %H:%M')
-        pesaDataDf = pd.read_csv(self.path + "./dati_pese_dinamiche/dati 2021-12-04_2021-12-12 pesa km 104,450.csv", sep=";", index_col=0)
+        pesaDataDf = pd.read_csv(self.directory + "./dati_pese_dinamiche/dati 2021-12-04_2021-12-12 pesa km 104,450.csv", sep=";", index_col=0)
         pesaDataDf = pesaDataDf[["Id", "StartTimeStr", "ClassId", "GrossWeight", "Velocity", "VelocityUnit"]]
         pesaDataDf["Time"] = pd.to_datetime(pesaDataDf["StartTimeStr"])
         pesaDataDf["Time"] = pesaDataDf["Time"].dt.strftime('%Y-%d-%m %H:%M:00')
@@ -236,11 +278,11 @@ class SHMDataset(Dataset):
         return groupsDf
 
     def _labelAssignment(self,):
+        print(f"Entering in function _labelAssignment", end=' ', flush=True)
         sensorLabelsDfList = []
         groupsDfList = []
-
         sensorsList = self.data["sens_pos"].unique()
-        for sensor in sensorsList:
+        for sensor in tqdm(sensorsList):
             if (sensor in self.noisySensors) or (sensor not in self.distanceToSensor.keys()) or (sensor not in self.sensorVarDict.keys()):
                 continue
             assignedLabels = {}
@@ -255,7 +297,7 @@ class SHMDataset(Dataset):
             sensorData = self.data[self.data["sens_pos"]==sensor]
             threshold = self.sensorVarDict[sensor]["threshold"]
             groupsDf = self.groupsGenerator(sensorData, minTime, maxTime, threshold)
-            print(f"Total groups found for sensor {sensor}: {groupsDf.shape[0]}")
+            print(f"Total groups found for sensor {sensor}: {groupsDf.shape[0]}", end=' ', flush=True)
             if groupsDf.empty:
                 continue
 
@@ -303,11 +345,11 @@ class SHMDataset(Dataset):
 
     def _partitioner(self):
         sensors = self.data['sens_pos'].unique().tolist()
-        print(f'start partitioner')
+        print(f'start partitioner', end=' ', flush=True)
         partitions = {}
         cumulatedWindows = 0
         limits = dict()
-        print(f'Generating windows')
+        print(f'Generating windows', end=' ', flush=True)
         for sensor in tqdm(sensors):
             if (sensor in self.noisySensors) or (sensor not in self.distanceToSensor.keys()):
                 continue
@@ -326,7 +368,7 @@ class SHMDataset(Dataset):
 
         mins = list()
         maxs = list()
-        print(f'Defining useful windows limits')
+        print(f'Defining useful windows limits', end=' ', flush=True)
         indexes = list(range(0, cumulatedWindows))
         random.shuffle(indexes)
 
@@ -356,7 +398,7 @@ class SHMDataset(Dataset):
                         else:
                             sys.exit(0)
                     break
-        print(f'Total windows in dataset: {cummulator}')
+        print(f'Total windows in dataset: {cummulator}', end=' ', flush=True)
         min = np.min(np.array(mins))
         max = np.max(np.array(maxs))   
         print(f'General min: {min}')
@@ -398,8 +440,8 @@ class SHMDataset(Dataset):
         for each sensor in the file sensorVarDict.json
         During fine-tuning or evaluation, the statistics are readed from the file
         """
-        if isPreTrain:
-            print(f'Start creating thresholds')
+        if isPreTrain and ("sensorVarDict.json" not in os.listdir(self.directory)):
+            print(f'Start creating thresholds', end=' ', flush=True)
             varDf = self.data[["sens_pos", "vars"]]
             sensorsList = self.data["sens_pos"].unique()
             sensorVarDict = {}
@@ -413,16 +455,16 @@ class SHMDataset(Dataset):
                 std = sensorVarDf["vars"].std()
                 threshold = mean + 3.5 * std
                 sensorVarDict[sensor] = {"mean": mean, "std": std, "threshold": threshold}
-                with open(self.path + "./sensorVarDict.json", "w") as f:
+                with open(self.directory + "./sensorVarDict.json", "w") as f:
                     # Write the dict to the file
                     json.dump(sensorVarDict, f)
-            print(f'Finish thresholds creation')
+            print(f'Finish thresholds creation', end=' ', flush=True)
         else:
-            print(f'Start reading thresholds')
-            with open(self.path + "./sensorVarDict.json", "r") as f:
+            print(f'Start reading thresholds', end=' ', flush=True)
+            with open(self.directory + "./sensorVarDict.json", "r") as f:
                 # Load the dict from the file
                 sensorVarDict = json.load(f)
 
-            print(f'Finish thresholds reading')
+            print(f'Finish thresholds reading', end=' ', flush=True)
 
         return sensorVarDict

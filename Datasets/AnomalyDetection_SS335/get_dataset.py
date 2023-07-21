@@ -11,6 +11,7 @@ import random
 from scipy import signal
 from pathlib import Path
 import sys
+import pickle as pkl
 '''
 There are multiple functions in this file:
 - get_dataset, give you back the whole dataset with all the variables
@@ -50,7 +51,7 @@ def get_data(directory,
     )
     labels = np.asarray([])
     dataset_final = np.asarray([])
-    for i, (data, label) in enumerate(data_loader_train): 
+    for i, (data, label) in tqdm(enumerate(data_loader_train)): 
         if i == 0:
             dataset_final = np.asarray(data)
         else:
@@ -61,17 +62,30 @@ class SHMDataset(Dataset):
     def __init__(self, data_path, date, num_days, sensor, time_frequency, windowLength):
         self.day_start = date
         self.num_days = num_days
-        self.path = data_path
+        self.directory = data_path
         self.sensor = sensor
         self.time_frequency = time_frequency
         self.th = 3.125*(10**-5)
-        self.data = self._readCSV()
         self.sampleRate = 100
         self.frameLength = 198
         self.stepLength = 10
         self.windowLength = windowLength #500 ## FORMULA TO COMPUTE THE TIME SAMPLES: 1 + (self.windowLength - self.frameLength) / self.stepLength
         self.windowStep = 200 #500
-        self.data, self.limits, self.totalWindows, self.min, self.max = self._partitioner()
+        
+        if f'vehicles_anomaly_{self.day_start}_{self.num_days}_{self.windowLength}.pkl' in os.listdir(self.directory):
+            print("Loading AnomalyDetection dataset", end=' ', flush=True)
+            #to load it
+            with open(self.directory+f'vehicles_anomaly_{self.day_start}_{self.num_days}_{self.windowLength}.pkl', "rb") as f: 
+                self.data, self.limits, self.totalWindows, self.min, self.max = pkl.load(f)
+        else:
+            print("Creating AnomalyDetection dataset", end=' ', flush=True)
+            self.data = self._readCSV()
+            self.data, self.limits, self.totalWindows, self.min, self.max = self._partitioner()
+            # if isinstance(self.data, pd.DataFrame):
+            #     self.data = self.data.values
+            #to save it
+            with open(self.directory+f"vehicles_anomaly_{self.day_start}_{self.num_days}_{self.windowLength}.pkl", "wb") as f:
+                pkl.dump([self.data, self.limits, self.totalWindows, self.min, self.max], f)
 
     def __len__(self):
         return self.totalWindows
@@ -97,10 +111,10 @@ class SHMDataset(Dataset):
         for x in tqdm(range(self.num_days)): # from 40 to 100 seconds per file
             yy, mm, dd = (self.day_start + datetime.timedelta(days=x)).strftime('%Y,%m,%d').split(",")
             date = f"{int(yy)}{int(mm)}{int(dd)}"
-            df = pd.read_csv(self.path + f"ss335-acc-{date}.csv")
-            print(f'Read file {x}')
+            df = pd.read_csv(self.directory + f"ss335-acc-{date}.csv")
+            print(f'Read file {x}', end=' ', flush=True)
             ldf.append(df.drop(['x','y', "year", "month", "day", "Unnamed: 0"], axis=1))
-            print(f'Dropped axes from file {x}')
+            print(f'Dropped axes from file {x}', end=' ', flush=True)
         df = pd.concat(ldf).sort_values(by=['sens_pos', 'ts'])
         df = df.reset_index(drop=True)
         new_dict = {
@@ -131,21 +145,19 @@ class SHMDataset(Dataset):
         return df_new
             
     def _partitioner(self):
-        sensors = self.data['sens_pos'].unique().tolist()
         print(f'start partitioner')
         partitions = {}
         cumulatedWindows = 0
         limits = dict()
         print(f'Generating windows')
-        for sensor in tqdm(sensors):
-            sensorData = self.data[self.data['sens_pos']==sensor]
-            totalFrames = sensorData.shape[0]
-            totalWindows = math.ceil((totalFrames-self.windowLength)/self.windowStep)
-            start = cumulatedWindows
-            cumulatedWindows += totalWindows
-            end = cumulatedWindows
-            indexStart = sensorData.index[0]
-            partitions[sensor]= (start, end, indexStart)
+        sensorData = self.data
+        totalFrames = sensorData.shape[0]
+        totalWindows = math.ceil((totalFrames-self.windowLength)/self.windowStep)
+        start = cumulatedWindows
+        cumulatedWindows += totalWindows
+        end = cumulatedWindows
+        indexStart = sensorData.index[0]
+        partitions["S6.1.3"]= (start, end, indexStart)
 
         timeData = torch.tensor(self.data["z"].values, dtype=torch.float64)
         cummulator = -1
@@ -156,7 +168,6 @@ class SHMDataset(Dataset):
         noiseFreeSpaces = 1
         indexes = list(range(0, cumulatedWindows))
         random.shuffle(indexes)
-        
         for index in tqdm(indexes):
             if cummulator >= 500000: #Number of used examples during training. I do this to avoid large training times.
                 break

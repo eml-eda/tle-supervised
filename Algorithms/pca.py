@@ -48,7 +48,7 @@ class pca_class:
         """
         output = {}
         conv = (1*2.5)*2**-15
-        interval = 30
+        interval = 1
         for values in np.arange(0, ds.shape[0], interval): #windows of 30 seconds
             section = ds[values:(values+interval),:]
             if section.shape[0]>0: 

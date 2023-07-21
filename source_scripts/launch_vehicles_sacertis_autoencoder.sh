@@ -22,3 +22,5 @@ if [[ $gpu == "3" ]]; then
 fi
 
 python vehicles_sacertis_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/ --model autoencoder | tee logs/Vehicles_Sacertis_autoencoder.log
+
+python vehicles_sacertis_example.py --dir /baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/ --model autoencoder --pretrain False --load_pretrain False | tee logs/Vehicles_Sacertis_autoencoder_no_pretrain.log

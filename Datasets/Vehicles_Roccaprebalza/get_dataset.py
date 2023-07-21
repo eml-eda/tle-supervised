@@ -6,6 +6,8 @@ import itertools
 from torch.utils.data import Dataset
 import torch 
 from scipy import signal
+import pickle as pkl
+import os 
 
 def label_creation(row_label, vehicle_type):
     return sum(row_label==vehicle_type)/10
@@ -32,8 +34,9 @@ def get_data(directory,
         shift_sec_size = 2,
         time_frequency = "time",
         car = 'none'):
-    dataset = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car)
-    return dataset.data, dataset.labels[car]
+    dataset_train = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car, train = True, test = False)
+    dataset_test = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car, train = False, test = True)
+    return dataset_train.data, dataset_train.labels[car], dataset_test.data, dataset_test.labels[car]
 
 def get_dataset(
         directory,
@@ -41,13 +44,14 @@ def get_dataset(
         shift_sec_size = 2,
         time_frequency = "time",
         car = 'none'):
-    dataset = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car)
-    return dataset
+    dataset_train = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car, train = True, test = False)
+    dataset_test = SHMDataset_Roccaprebalza(directory, window_sec_size, shift_sec_size, time_frequency, car, train = False, test = True)
+    return dataset_train, dataset_test
 
 
 class SHMDataset_Roccaprebalza(Dataset):
 
-    def __init__(self, directory, window_sec_size, shift_sec_size, time_frequency, car):
+    def __init__(self, directory, window_sec_size, shift_sec_size, time_frequency, car, train, test):
         self.directory = directory
         self.window_sec_size = window_sec_size
         self.shift_sec_size = shift_sec_size
@@ -59,16 +63,56 @@ class SHMDataset_Roccaprebalza(Dataset):
         self.sampleRate = 100
         self.frameLength = 198
         self.stepLength = 58
-        self.data, self.labels = self._read_data()
-        self.car = car
+        if f'vehicles_roccaprebalza_{self.time_frequency}.pkl' in os.listdir(self.directory):
+            print("Loading Roccaprebalza dataset")
+            #to load it
+            with open(self.directory+f'vehicles_roccaprebalza_{self.time_frequency}.pkl', "rb") as f:
+                self.data, self.labels = pkl.load(f)
+        else:
+            print("Creating Roccaprebalza dataset")
+            self.data, self.labels = self._read_data()
+            if isinstance(self.data, pd.DataFrame):
+                self.data = self.data.values
+            #to save it
+            with open(self.directory+f"vehicles_roccaprebalza_{self.time_frequency}.pkl", "wb") as f:
+                pkl.dump([self.data, self.labels], f)
+            
+
+        import random 
+        random.seed(1)
+        percentage = 75
+        k = len(self.data) * percentage // 100
+        indicies = random.sample(range(len(self.data)), k)
+        new_data = []
+        new_labels = pd.DataFrame(columns=['y_car', 'y_camion'])
+
+
+
+        if train == True:
+            for i, data in enumerate(self.data):
+                if i in indicies:
+                    new_data.append(data)
+                    dict = {'y_car': [self.labels.values[i][0]], 'y_camion': [self.labels.values[i][1]]}
+                    new_labels = pd.concat([new_labels, pd.DataFrame.from_dict(dict)])
+        elif test == True:
+            for i, data in enumerate(self.data):
+                if i not in indicies:
+                    new_data.append(data)
+                    dict = {'y_car': [self.labels.values[i][0]], 'y_camion': [self.labels.values[i][1]]}
+                    new_labels = pd.concat([new_labels, pd.DataFrame.from_dict(dict)])
+        self.data = new_data 
+        self.labels = new_labels
+        self.labels.reset_index(inplace = True)
+        self.labels = self.labels.drop('index', axis=1)
+        self.car_camion = car
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        if self.car == 'y_car':
+        if self.car_camion == 'y_car':
             return self.data[index], self.labels['y_car'][index]
-        elif self.car == 'y_camion':
+        elif self.car_camion == 'y_camion':
             return self.data[index], self.labels['y_camion'][index]
         else:
             sys.exit(0)
