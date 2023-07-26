@@ -189,8 +189,16 @@ def reconstruct_autoencoder(args):
     msg = model.load_state_dict(checkpoint_model, strict=False)
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
+### Creating Testing Dataset for Normal Data
+    # starting_date = datetime.date(2019,5,10) 
+    # num_days = 4
+### Creating Testing Dataset for Anomaly Data
+    # starting_date = datetime.date(2019,4,17) 
+    # num_days = 4
     print("Creating Training Dataset")
     dataset = get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = args.window_size)
+    torch.manual_seed(0)
+    np.random.seed(0) 
     sampler_train = torch.utils.data.RandomSampler(dataset)
     data_loader_train = torch.utils.data.DataLoader(
         dataset, sampler=sampler_train,
@@ -199,11 +207,11 @@ def reconstruct_autoencoder(args):
         pin_memory='store_true',
         drop_last=True,
     )
-    img, pred = reconstruct(data_loader_train, model, device, index = 30)
+    img, pred = reconstruct(data_loader_train, model, device, index = 48)
     fig, axs = plt.subplots(nrows=1, ncols=2, constrained_layout=True, figsize = (8,8))
-    axs[0].imshow(img.cpu()[0,0,:,:])
-    axs[1].imshow(pred.cpu()[0,0,:,:])
-    plt.savefig("Results/prova.png")
+    axs[0].imshow(img.cpu()[0,0,:,:], cmap='gray')
+    axs[1].imshow(pred.cpu()[0,0,:,:], cmap='gray')
+    plt.savefig("Results/prova_gray.png", dpi = 600)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')

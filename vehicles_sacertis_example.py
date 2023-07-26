@@ -18,7 +18,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 import torch
 from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
 assert timm.__version__ == "0.3.2"  # version check
@@ -96,21 +96,22 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True, load_pr
     
 ### Creating Finetuning 
     if finetune == True:
-        lr = 0.25e-5
-        dataset = get_dataset(directory, False, False, True,  sensor = "None", time_frequency = "frequency")
-        sampler_test = torch.utils.data.RandomSampler(dataset)
-        data_loader_test = torch.utils.data.DataLoader(
-            dataset, shuffle=False,
-            batch_size=1,
+        
+        dataset = get_dataset(directory, False, True, False,  sensor = "None", time_frequency = "frequency")
+        sampler_train = torch.utils.data.RandomSampler(dataset)
+        data_loader_finetune = torch.utils.data.DataLoader(
+            dataset, sampler=sampler_train,
+            batch_size=128,
             num_workers=1,
             pin_memory='store_true',
-            drop_last=True,
-        )
-
+            drop_last=True)
+        
+        lr = 0.25e-5
         torch.manual_seed(0)
         np.random.seed(0)
-        model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0)
+        model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
         model.to(device)
+
         if load_pretrain == True:
             checkpoint = torch.load("Results/checkpoints/checkpoint-vehicles_sacertis-200.pth", map_location='cpu')
             checkpoint_model = checkpoint['model']
@@ -127,23 +128,20 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True, load_pr
         loss_scaler = NativeScaler()
         criterion = torch.nn.MSELoss()
         
-        y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
-        compute_accuracy(y_test, y_predicted)
-
-        dataset = get_dataset(directory, False, True, False,  sensor = "None", time_frequency = "frequency")
-        sampler_train = torch.utils.data.RandomSampler(dataset)
-        data_loader_finetune = torch.utils.data.DataLoader(
-            dataset, sampler=sampler_train,
-            batch_size=128,
-            num_workers=1,
-            pin_memory='store_true',
-            drop_last=True)
         print(f"Start finetuning for {total_epochs} epochs")
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
                 misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_sacertis_finetune")
 
+        dataset = get_dataset(directory, False, False, True,  sensor = "None", time_frequency = "frequency")
+        data_loader_test = torch.utils.data.DataLoader(
+            dataset, shuffle=False,
+            batch_size=1,
+            num_workers=1,
+            pin_memory='store_true',
+            drop_last=True,
+        )
         y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
         compute_accuracy(y_test, y_predicted)
 

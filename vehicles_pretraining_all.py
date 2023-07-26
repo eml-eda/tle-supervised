@@ -5,13 +5,14 @@ import Datasets.Vehicles_Roccaprebalza.get_dataset as Vehicles_Roccaprebalza
 import datetime
 from torch.utils.data import Dataset
 import numpy as np
+import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import r2_score
 
 import torch
 from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
 assert timm.__version__ == "0.3.2"  # version check
@@ -62,180 +63,230 @@ def get_all_datasets():
     dataset = Dataset_All(data_all)
     return dataset
     
-def main_masked_autoencoder_roccaprebalza(directory, pretrain = True, finetune = True, load_pretrain = True):
-    import os 
-    os.environ["CUDA_VISIBLE_DEVICES"]="2"
+def pretrain():
     device = torch.device('cuda')
     lr = 0.25e-3
     total_epochs = 201
     warmup_epochs = 100
     save_interval_epochs = 100
+    dataset_train = get_all_datasets()
+    sampler_train = torch.utils.data.RandomSampler(dataset_train)
+    data_loader_train = torch.utils.data.DataLoader(
+        dataset_train, sampler=sampler_train,
+        batch_size=128,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True)
+    torch.manual_seed(0)
+    np.random.seed(0)
+    model = audioMae_vit_base(norm_pix_loss=True)
+    model.to(device)
+    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+    loss_scaler = NativeScaler()
+    print(f"Start pre-training for {total_epochs} epochs")
+    for epoch in range(0, total_epochs):
+        train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
+        if epoch % save_interval_epochs == 0:
+            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
 
-### Creating Training 
-    if pretrain == True:
-        dataset_train = get_all_datasets()
-        sampler_train = torch.utils.data.RandomSampler(dataset_train)
-        data_loader_train = torch.utils.data.DataLoader(
-            dataset_train, sampler=sampler_train,
-            batch_size=128,
-            num_workers=1,
-            pin_memory='store_true',
-            drop_last=True)
-        torch.manual_seed(0)
-        np.random.seed(0)
-        model = audioMae_vit_base(norm_pix_loss=True)
-        model.to(device)
-        param_groups = optim_factory.add_weight_decay(model, 0.05)
-        optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
-        loss_scaler = NativeScaler()
-        print(f"Start pre-training for {total_epochs} epochs")
-        for epoch in range(0, total_epochs):
-            train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
-            if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
+### Creating Finetuning Roccaprebalza
+def finetune_roccaprebalza(args, load_pretrain):
+    lr = 0.25e-5
+    total_epochs = 501
+    save_interval_epochs = 100
+    device = torch.device('cuda')
+    warmup_epochs = 100
+    dataset_train, dataset_test = Vehicles_Roccaprebalza.get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
+    data_loader_test = torch.utils.data.DataLoader(
+        dataset_test, shuffle=False,
+        batch_size=1,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )
+
+    torch.manual_seed(0)
+    np.random.seed(0)
+    model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
+    model.to(device)
+    if load_pretrain == True:
+        checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint_model = checkpoint['model']
+        state_dict = model.state_dict()
+        for k in ['head.weight', 'head.bias']:
+            if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+                print(f"Removing key {k} from pretrained checkpoint")
+                del checkpoint_model[k]
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        interpolate_pos_embed(model, checkpoint_model)
+    # build optimizer with layer-wise lr decay (lrd)
+    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+    loss_scaler = NativeScaler()
+    criterion = torch.nn.MSELoss()
     
-        
-### Creating Finetuning 
-    if finetune == True:
-        lr = 0.25e-5
-        total_epochs = 501
-        dataset_train, dataset_test = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
-        sampler_test = torch.utils.data.RandomSampler(dataset_test)
+    y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
+    compute_accuracy(y_test, y_predicted)
+
+    sampler_train = torch.utils.data.RandomSampler(dataset_train)
+    data_loader_finetune = torch.utils.data.DataLoader(
+        dataset_train, sampler=sampler_train,
+        batch_size=8,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True)
+    print(f"Start finetuning for {total_epochs} epochs")
+    
+    for epoch in range(0, total_epochs):
+        train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
+        if epoch % save_interval_epochs == 0:
+            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_{args.car}_roccaprebalza_finetune")
+
+    y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
+    compute_accuracy(y_test, y_predicted)
+
+### Creating Finetuning Sacertis
+def finetune_sacertis(args, load_pretrain):
+    lr = 0.25e-5
+    total_epochs = 201
+    save_interval_epochs = 50
+    device = torch.device('cuda')
+    warmup_epochs = 100
+
+    dataset = Vehicles_Sacertis.get_dataset(args.dir, False, True, False,  sensor = "None", time_frequency = "frequency")
+    sampler_train = torch.utils.data.RandomSampler(dataset)
+    data_loader_finetune = torch.utils.data.DataLoader(
+        dataset, sampler=sampler_train,
+        batch_size=128,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True)
+    
+    torch.manual_seed(0)
+    np.random.seed(0)
+    model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
+    model.to(device)
+    if load_pretrain == True:
+        checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint_model = checkpoint['model']
+        state_dict = model.state_dict()
+        for k in ['head.weight', 'head.bias']:
+            if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+                print(f"Removing key {k} from pretrained checkpoint")
+                del checkpoint_model[k]
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        interpolate_pos_embed(model, checkpoint_model)
+    # build optimizer with layer-wise lr decay (lrd)
+    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+    loss_scaler = NativeScaler()
+    criterion = torch.nn.MSELoss()
+
+    print(f"Start finetuning for {total_epochs} epochs")
+    for epoch in range(0, total_epochs):
+        train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
+        if epoch % save_interval_epochs == 0:
+            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_vehicles_sacertis_finetune")
+
+        dataset = Vehicles_Sacertis.get_dataset(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
         data_loader_test = torch.utils.data.DataLoader(
-            dataset_test, shuffle=False,
+            dataset, shuffle=False,
             batch_size=1,
             num_workers=1,
             pin_memory='store_true',
             drop_last=True,
         )
-
-        torch.manual_seed(0)
-        np.random.seed(0)
-        model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0) ## DA CAMBIARE
-        model.to(device)
-        if load_pretrain == True:
-            checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
-            checkpoint_model = checkpoint['model']
-            state_dict = model.state_dict()
-            for k in ['head.weight', 'head.bias']:
-                if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-                    print(f"Removing key {k} from pretrained checkpoint")
-                    del checkpoint_model[k]
-            msg = model.load_state_dict(checkpoint_model, strict=False)
-            interpolate_pos_embed(model, checkpoint_model)
-        # build optimizer with layer-wise lr decay (lrd)
-        param_groups = optim_factory.add_weight_decay(model, 0.05)
-        optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
-        loss_scaler = NativeScaler()
-        criterion = torch.nn.MSELoss()
+        y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
+        compute_accuracy(y_test, y_predicted)
         
-        y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
-        compute_accuracy(y_test, y_predicted)
-
-        dataset_train, dataset_test = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
-        sampler_train = torch.utils.data.RandomSampler(dataset_train)
-        data_loader_finetune = torch.utils.data.DataLoader(
-            dataset_train, sampler=sampler_train,
-            batch_size=8,
-            num_workers=1,
-            pin_memory='store_true',
-            drop_last=True)
-        print(f"Start finetuning for {total_epochs} epochs")
-        for epoch in range(0, total_epochs):
-            train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
-            if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all_finetune")
-        y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
-        compute_accuracy(y_test, y_predicted)
-
-def main_masked_autoencoder_Sacertis(directory, pretrain = True, finetune = True, load_pretrain = True):
-    TODO
-    device = torch.device('cuda')
-    lr = 0.25e-3
-    total_epochs = 201
+### Creating Finetuning Anomaly
+def finetune_anomaly(args, load_pretrain):
+    lr = 0.25e-2
+    total_epochs = 401
     warmup_epochs = 50
     save_interval_epochs = 100
+    device = torch.device('cuda')
 
-### Creating Training 
-    if pretrain == True:
-        dataset_train = get_all_datasets()
-        sampler_train = torch.utils.data.RandomSampler(dataset_train)
-        data_loader_train = torch.utils.data.DataLoader(
-            dataset_train, sampler=sampler_train,
-            batch_size=16,
-            num_workers=1,
-            pin_memory='store_true',
-            drop_last=True)
-        torch.manual_seed(0)
-        np.random.seed(0)
-        model = audioMae_vit_base(norm_pix_loss=True)
-        model.to(device)
-        param_groups = optim_factory.add_weight_decay(model, 0.05)
-        optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
-        loss_scaler = NativeScaler()
-        print(f"Start pre-training for {total_epochs} epochs")
-        for epoch in range(0, total_epochs):
-            train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
-            if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
+    starting_date = datetime.date(2019,5,22) 
+    num_days = 7
+    print("Creating Training Dataset")
+    dataset = AnomalyDetection_SS335.get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = 1190)
+    sampler_train = torch.utils.data.RandomSampler(dataset)
+    data_loader_train = torch.utils.data.DataLoader(
+        dataset, sampler=sampler_train,
+        batch_size=64,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )
     
-        
-### Creating Finetuning 
-    if finetune == True:
-        dataset_train, dataset_test = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
-        sampler_test = torch.utils.data.RandomSampler(dataset_test)
-        data_loader_test = torch.utils.data.DataLoader(
-            dataset_test, shuffle=False,
-            batch_size=1,
-            num_workers=1,
-            pin_memory='store_true',
-            drop_last=True,
-        )
+    torch.manual_seed(0)
+    np.random.seed(0)
+    model = audioMae_vit_base(norm_pix_loss=False)
+    model.to(device)
+    if load_pretrain == True:
+        checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth.pth", map_location='cpu')
+        checkpoint_model = checkpoint['model']
+        msg = model.load_state_dict(checkpoint_model, strict=False)
 
-        torch.manual_seed(0)
-        np.random.seed(0)
-        model = audioMae_vit_base_R(norm_pix_loss=True)
-        model.to(device)
-        if load_pretrain == True:
-            checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
-            checkpoint_model = checkpoint['model']
-            state_dict = model.state_dict()
-            for k in ['head.weight', 'head.bias']:
-                if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
-                    print(f"Removing key {k} from pretrained checkpoint")
-                    del checkpoint_model[k]
-            msg = model.load_state_dict(checkpoint_model, strict=False)
-            interpolate_pos_embed(model, checkpoint_model)
-        # build optimizer with layer-wise lr decay (lrd)
-        param_groups = optim_factory.add_weight_decay(model, 0.05)
-        optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
-        loss_scaler = NativeScaler()
-        criterion = torch.nn.MSELoss()
-        
-        y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
-        compute_accuracy(y_test, y_predicted)
+    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+    loss_scaler = NativeScaler()
+    print(f"Start training for {total_epochs} epochs")
+    for epoch in range(0, total_epochs):
+        train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
+        if epoch % save_interval_epochs == 0:
+            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "pretrainig_all_anomaly")
 
-        dataset_train, dataset_test = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
-        sampler_train = torch.utils.data.RandomSampler(dataset_train)
-        data_loader_finetune = torch.utils.data.DataLoader(
-            dataset_train, sampler=sampler_train,
-            batch_size=16,
-            num_workers=1,
-            pin_memory='store_true',
-            drop_last=True)
-        print(f"Start finetuning for {total_epochs} epochs")
-        for epoch in range(0, total_epochs):
-            train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
-            if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all_finetune")
-        y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
-        compute_accuracy(y_test, y_predicted)
+### Creating Testing Dataset for Normal Data
+    starting_date = datetime.date(2019,5,10) 
+    num_days = 4
+    print("Creating Testing Dataset -- Normal")
+    dataset = AnomalyDetection_SS335.get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = 1190)
+    data_loader_test_normal = torch.utils.data.DataLoader(
+        dataset, shuffle=False,
+        batch_size=1,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )
+    losses_normal = evaluate(data_loader_test_normal, model, device)
+    df = pd.DataFrame.from_dict(losses_normal)
+    df.to_csv(f'Results/Pretrain_all_masked_1190samples_normal.csv', index = False, header = True)
+        
+### Creating Testing Dataset for Anomaly Data
+    starting_date = datetime.date(2019,4,17) 
+    num_days = 4
+    print("Creating Testing Dataset -- Anomaly")
+    dataset = AnomalyDetection_SS335.get_dataset(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = 1190)
+    data_loader_test_anomaly = torch.utils.data.DataLoader(
+        dataset, shuffle=False,
+        batch_size=1,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )
+    losses_anomaly = evaluate(data_loader_test_anomaly, model, device)
+    df = pd.DataFrame.from_dict(losses_anomaly)
+    df.to_csv(f'Results/Pretrain_all_masked_1190samples_anomaly.csv', index = False, header = True)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/",
                         help='directory')
-    parser.add_argument('--car', type=str, default="y_camion",
-                        help='y_camion, y_car')
+    parser.add_argument('--car', type=str, default="y_camion", help='y_camion, y_car')
+    parser.add_argument('--dataset', type=str, default="Roccaprebalza", help='Roccaprebalza, Anomaly, Sacertis')
+    parser.add_argument('--pretrain', type=bool, default=True)
+    parser.add_argument('--finetune', type=bool, default=True)
+    parser.add_argument('--load_pretrain', type=bool, default=True)
     args = parser.parse_args()
-    main_masked_autoencoder_roccaprebalza(args, pretrain = True, finetune = True, load_pretrain = True)
+    if args.pretrain == True:
+        pretrain(args)
+    if args.finetune:
+        if args.dataset == "Anomaly":
+            finetune_anomaly(args, load_pretrain=args.load_pretrain)
+        elif args.dataset == "Anomaly":
+            finetune_roccaprebalza(args, load_pretrain=args.load_pretrain)
+        elif args.dataset == "Anomaly":
+            finetune_sacertis(args, load_pretrain=args.load_pretrain)
