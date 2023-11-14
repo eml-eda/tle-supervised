@@ -103,7 +103,7 @@ def main_autoencoder(args, pretrain = True, finetune = True, load_pretrain = Tru
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"{args.car}_roccaprebalza")
+                misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"{args.car}_roccaprebalza")
     
 ### Creating Finetuning 
     if finetune == True:
@@ -124,7 +124,7 @@ def main_autoencoder(args, pretrain = True, finetune = True, load_pretrain = Tru
         model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
         model.to(device)
         if load_pretrain == True:
-            checkpoint = torch.load(f"Results/checkpoints/checkpoint-{args.car}_roccaprebalza-500.pth", map_location='cpu')
+            checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-{args.car}_roccaprebalza-500.pth", map_location='cpu')
             checkpoint_model = checkpoint['model']
             state_dict = model.state_dict()
             for k in ['head.weight', 'head.bias']:
@@ -155,7 +155,7 @@ def main_autoencoder(args, pretrain = True, finetune = True, load_pretrain = Tru
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"{args.car}_roccaprebalza_finetune")
+                misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"{args.car}_roccaprebalza_finetune")
 
         y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
         compute_accuracy(y_test, y_predicted)
@@ -177,7 +177,7 @@ def evaluate_autoencoder(args, pretrain = True, finetune = True, load_pretrain =
 
     model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     model.to(device)
-    checkpoint = torch.load(f"Results/checkpoints/checkpoint-{args.car}_roccaprebalza_finetune-500.pth", map_location='cpu')
+    checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-{args.car}_roccaprebalza_finetune-500.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     state_dict = model.state_dict()
     # for k in ['head.weight', 'head.bias']:

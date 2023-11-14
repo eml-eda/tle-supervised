@@ -41,7 +41,7 @@ def plot_results_SOA():
     vehicle = 'camion_'
     base_string = './Results/Roccaprebalza_'
     names = ["SVR", "DT", "MLP", "KNN", "LR"]
-    colors = ['C0', 'C1', 'C2', 'C3', 'C4']
+    colors = ['#A9D18E', '#9DC3E6']
 
     # Modeling with Numpy
     def equation(a, b):
@@ -116,7 +116,7 @@ def plot_results_autoencoder():
     methods = ['Heavy Vehicles', 'Light Vehicles']
     files = ['y_camion', 'y_car']
     base_string = './Results/csv/Roccaprebalza_'
-    colors = ['g', 'k']
+    colors = ['#A9D18E', '#9DC3E6']
 
     # Modeling with Numpy
     def equation(a, b):

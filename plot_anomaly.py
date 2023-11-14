@@ -15,7 +15,7 @@ Data used from Amir:
 '''
 
 dim_filtering = 120
-
+colors = ['#A9D18E', '#9DC3E6']
 def plot_results_PCA(data, data2, fig):
     th = np.median(data) + 1 * np.std(data)
     data_new = data[data<th]
@@ -30,16 +30,16 @@ def plot_results_PCA(data, data2, fig):
     min = np.min(norm)
     data = (data-min)/(max-min)
     data2 = (data2-min)/(max-min)
-    fig.plot(np.arange(len(data2),len(data) + len(data2)), data, color = 'g', label = 'Pre-Intervention', linewidth = 1.5, alpha = 0.5)
-    fig.plot(np.arange(0,len(data2)), data2, color = 'k', label = 'Post-Intervention', linewidth = 1.5, alpha = 0.5)
+    fig.plot(np.arange(len(data2),len(data) + len(data2)), data, color = colors[0], label = 'Pre-Intervention', linewidth = 1.5, alpha = 0.5)
+    fig.plot(np.arange(0,len(data2)), data2, color = colors[1], label = 'Post-Intervention', linewidth = 1.5, alpha = 0.5)
     new_data = []
     for i in np.arange(0, len(data-dim_filtering)):
         new_data.append(np.median(data[i:(i+dim_filtering)]))
     new_data2 = []
     for i in np.arange(0, len(data2-dim_filtering)):
         new_data2.append(np.median(data2[i:(i+dim_filtering)]))
-    fig.plot(np.arange(len(new_data2),len(new_data) + len(new_data2)), new_data, label = 'Pre-Intervention Filtered', linewidth = 1.5, color = 'g')
-    fig.plot(np.arange(0,len(new_data2)), new_data2, label = 'Post-Intervention Filtered', linewidth = 1.5, color = 'k')
+    fig.plot(np.arange(len(new_data2),len(new_data) + len(new_data2)), new_data, label = 'Pre-Intervention Filtered', linewidth = 1.5, color = 'green')
+    fig.plot(np.arange(0,len(new_data2)), new_data2, label = 'Post-Intervention Filtered', linewidth = 1.5, color = 'royalblue')
     fig.grid(axis = 'both')
     fig.set_title('PCA')
     fig.set_xlabel('Time [windows]', fontsize=12)
@@ -59,8 +59,8 @@ def plot_results_autoencoder(data, data2 , fig):
     min = np.min(norm)
     data = (data-min)/(max-min)
     data2 = (data2-min)/(max-min)
-    fig.plot(np.arange(len(data2),len(data) + len(data2)), data, color = 'g', label = 'Pre Intervention', linewidth = 1.5, alpha = 0.5)
-    fig.plot(np.arange(0,len(data2)), data2, color = 'k', label = 'Post Intervention', linewidth = 1.5, alpha = 0.5)
+    fig.plot(np.arange(len(data2),len(data) + len(data2)), data, color = colors[0], label = 'Pre Intervention', linewidth = 1.5, alpha = 0.5)
+    fig.plot(np.arange(0,len(data2)), data2, color = colors[1], label = 'Post Intervention', linewidth = 1.5, alpha = 0.5)
 
     new_data = []
     for i in np.arange(0, len(data-dim_filtering)):
@@ -68,8 +68,8 @@ def plot_results_autoencoder(data, data2 , fig):
     new_data2 = []
     for i in np.arange(0, len(data2-dim_filtering)):
         new_data2.append(np.median(data2[i:(i+dim_filtering)]))
-    fig.plot(np.arange(len(new_data2),len(new_data) + len(new_data2)), new_data, color = 'g', label = 'Pre Intervention', linewidth = 1.5)
-    fig.plot(np.arange(0,len(new_data2)), new_data2, color = 'k', label = 'Post Intervention', linewidth = 1.5)
+    fig.plot(np.arange(len(new_data2),len(new_data) + len(new_data2)), new_data, color = 'green', label = 'Pre Intervention', linewidth = 1.5)
+    fig.plot(np.arange(0,len(new_data2)), new_data2, color = 'royalblue', label = 'Post Intervention', linewidth = 1.5)
     fig.grid(axis = 'both')
     # fig.legend()
     fig.set_title('Masked Autoencoder')
@@ -142,8 +142,8 @@ def main_accuracy(directory):
     x = np.arange(5)
     bar_width = 0.35
     # Plot acc_PCA and acc_enc in the first subplot
-    axs[0].bar(x - bar_width/2, sens_PCA, width=bar_width, color='g', edgecolor = 'k', label='PCA')
-    axs[0].bar(x + bar_width/2, sens_enc, width=bar_width, color='k', edgecolor = 'k', label='Encoder')
+    axs[0].bar(x - bar_width/2, sens_PCA, width=bar_width, color=colors[0], edgecolor = 'k', label='PCA')
+    axs[0].bar(x + bar_width/2, sens_enc, width=bar_width, color=colors[1], edgecolor = 'k', label='Encoder')
     axs[0].set_ylabel('Sensitivity', fontsize=12)
     axs[0].set_xlabel('Time Window [#]')
     axs[0].legend(fontsize=12)
@@ -153,15 +153,15 @@ def main_accuracy(directory):
         ax.yaxis.grid(True)
         ax.tick_params(labelsize=12)
 
-    axs[1].bar(x - bar_width/2, spec_PCA, width=bar_width, color='g', edgecolor = 'k', label='PCA')
-    axs[1].bar(x + bar_width/2, spec_enc, width=bar_width, color='k', edgecolor = 'k', label='Encoder')
+    axs[1].bar(x - bar_width/2, spec_PCA, width=bar_width, color=colors[0], edgecolor = 'k', label='PCA')
+    axs[1].bar(x + bar_width/2, spec_enc, width=bar_width, color=colors[1], edgecolor = 'k', label='Encoder')
     axs[1].set_ylabel('Specificity', fontsize=12)
     # axs[1].set_xticks(x)
     # axs[1].set_xticklabels([15, 30, 60, 120, 240])
     # axs[1].set_xlabel('Time Window [#]')
 
-    axs[2].bar(x - bar_width/2, acc_PCA, width=bar_width, color='g', edgecolor = 'k', label='PCA')
-    axs[2].bar(x + bar_width/2, acc_enc, width=bar_width, color='k', edgecolor = 'k', label='Encoder')
+    axs[2].bar(x - bar_width/2, acc_PCA, width=bar_width, color=colors[0], edgecolor = 'k', label='PCA')
+    axs[2].bar(x + bar_width/2, acc_enc, width=bar_width, color=colors[1], edgecolor = 'k', label='Encoder')
     axs[2].set_ylabel('Accuracy', fontsize=12)
     axs[2].set_xticks(x)
     axs[2].set_xticklabels([15, 30, 60, 120, 240])

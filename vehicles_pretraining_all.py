@@ -88,7 +88,7 @@ def pretrain():
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
+            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
 
 ### Creating Finetuning Roccaprebalza
 def finetune_roccaprebalza(args, load_pretrain):
@@ -111,7 +111,7 @@ def finetune_roccaprebalza(args, load_pretrain):
     model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     model.to(device)
     if load_pretrain == True:
-        checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -141,7 +141,7 @@ def finetune_roccaprebalza(args, load_pretrain):
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_{args.car}_roccaprebalza_finetune")
+            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_{args.car}_roccaprebalza_finetune")
 
     y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
     compute_accuracy(y_test, y_predicted)
@@ -168,7 +168,7 @@ def finetune_sacertis(args, load_pretrain):
     model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     model.to(device)
     if load_pretrain == True:
-        checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -187,7 +187,7 @@ def finetune_sacertis(args, load_pretrain):
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_vehicles_sacertis_finetune")
+            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_vehicles_sacertis_finetune")
 
         dataset = Vehicles_Sacertis.get_dataset(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
         data_loader_test = torch.utils.data.DataLoader(
@@ -226,7 +226,7 @@ def finetune_anomaly(args, load_pretrain):
     model = audioMae_vit_base(norm_pix_loss=False)
     model.to(device)
     if load_pretrain == True:
-        checkpoint = torch.load(f"Results/checkpoints/checkpoint-pretrain_all-200.pth.pth", map_location='cpu')
+        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         msg = model.load_state_dict(checkpoint_model, strict=False)
 
@@ -237,7 +237,7 @@ def finetune_anomaly(args, load_pretrain):
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "pretrainig_all_anomaly")
+            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "pretrainig_all_anomaly")
 
 ### Creating Testing Dataset for Normal Data
     starting_date = datetime.date(2019,5,10) 
@@ -273,20 +273,24 @@ def finetune_anomaly(args, load_pretrain):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
-    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/",
+    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/",
                         help='directory')
     parser.add_argument('--car', type=str, default="y_camion", help='y_camion, y_car')
-    parser.add_argument('--dataset', type=str, default="Roccaprebalza", help='Roccaprebalza, Anomaly, Sacertis')
-    parser.add_argument('--pretrain', type=bool, default=True)
+    parser.add_argument('--dataset', type=str, default="Sacertis", help='Roccaprebalza, Anomaly, Sacertis')
+    parser.add_argument('--pretrain', type=bool, default=False)
     parser.add_argument('--finetune', type=bool, default=True)
     parser.add_argument('--load_pretrain', type=bool, default=True)
     args = parser.parse_args()
+    print(args)
     if args.pretrain == True:
         pretrain(args)
     if args.finetune:
         if args.dataset == "Anomaly":
             finetune_anomaly(args, load_pretrain=args.load_pretrain)
-        elif args.dataset == "Anomaly":
+        elif args.dataset == "Roccaprebalza":
             finetune_roccaprebalza(args, load_pretrain=args.load_pretrain)
-        elif args.dataset == "Anomaly":
+        elif args.dataset == "Sacertis":
             finetune_sacertis(args, load_pretrain=args.load_pretrain)
+        else:
+            print("You can not even read the alternatives...")
+            exit(0)

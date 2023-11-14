@@ -64,7 +64,8 @@ def main_PCA(args):
     print("Creating Testing Dataset -- Anomaly")
     dataset_test_anomaly = get_data(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time", windowLength = args.window_size)
     pca_result_anomaly  = pca.predict(dataset_test_anomaly, Vx)
-
+    import pdb;pdb.set_trace()
+    
     name = f"Results/PCA_{args.window_size}samples"
     # plot_results(pca_result_anomaly, pca_result_normal, f"{name}.png")
     df = pd.DataFrame.from_dict(pca_result_normal)

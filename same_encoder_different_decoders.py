@@ -8,7 +8,6 @@ import numpy as np
 
 import torch
 from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
 assert timm.__version__ == "0.3.2"  # version check
@@ -39,6 +38,11 @@ def main(args):
     torch.manual_seed(0)
     np.random.seed(0)
     task = args.task
+    if args.modified == 'Yes':
+        from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
+    else:
+        from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+
     if task == "Roccaprebalza":
         model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
         total_epochs = 501
@@ -46,6 +50,7 @@ def main(args):
     elif task == "Sacertis":
         model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
         total_epochs = 201
+        warmup_epochs = 50
     elif task == "AnomalyDetection":
         model = audioMae_vit_base(norm_pix_loss=True, mask_ratio = 0.2)
         total_epochs = 401
@@ -53,7 +58,7 @@ def main(args):
         print("Task not provided")
         exit(0)
     model.to(device)
-    checkpoint = torch.load(f"Results/checkpoints/checkpoint-y_camion_roccaprebalza-500.pth", map_location='cpu')
+    checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     state_dict = model.state_dict()
     for k in ['head.weight', 'head.bias']:
@@ -92,6 +97,25 @@ def main(args):
             num_workers=1,
             pin_memory='store_true',
             drop_last=True)
+    if task == "Sacertis":
+        lr = 0.25e-5
+        optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+        dataset = Vehicles_Sacertis.get_dataset(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
+        data_loader_test = torch.utils.data.DataLoader(
+            dataset, shuffle=False,
+            batch_size=1,
+            num_workers=1,
+            pin_memory='store_true',
+            drop_last=True,
+        )
+        dataset = Vehicles_Sacertis.get_dataset(args.dir, False, True, False,  sensor = "None", time_frequency = "frequency")
+        sampler_train = torch.utils.data.RandomSampler(dataset)
+        data_loader_finetune = torch.utils.data.DataLoader(
+            dataset, sampler=sampler_train,
+            batch_size=128,
+            num_workers=1,
+            pin_memory='store_true',
+            drop_last=True)
     if args.train == "Yes":
         print(f"Start finetuning for {total_epochs} epochs")
         for epoch in range(0, total_epochs):
@@ -100,13 +124,13 @@ def main(args):
             # model.fc1.weight
             # model.decoder_blocks.mlp_block.fn.fn.net[0].weight
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"freeze_{args.task}")
+                misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"freeze_{args.task}_{args.car}")
         y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
         compute_accuracy(y_test, y_predicted)
     else:
         model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
         model.to(device)
-        checkpoint = torch.load(f"Results/checkpoints/checkpoint-freeze_-500.pth", map_location='cpu')
+        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-freeze_-500.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         msg = model.load_state_dict(checkpoint_model, strict=True)
@@ -116,16 +140,19 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
-    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/",
+    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/",
                         help='directory')
     parser.add_argument('--car', type=str, default="y_camion",
                         help='y_camion, y_car')
-    parser.add_argument('--task', type=str, default="Roccaprebalza",
+    parser.add_argument('--task', type=str, default="Sacertis",
                         help='Roccaprebalza, Sacertis, AnomalyDetection')
     parser.add_argument('--train', type=str, default="Yes",
                         help='Yes, No')
-    parser.add_argument('--tail', type=str, default="No",
+    parser.add_argument('--tail', type=str, default="Yes",
                         help='Yes, No')
+    parser.add_argument('--modified', type=str, default="Yes",
+                        help='Yes, No')
+    
     args = parser.parse_args()
     print(args)
     main(args)

@@ -92,7 +92,7 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True, load_pr
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_sacertis")
+                misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_sacertis")
     
 ### Creating Finetuning 
     if finetune == True:
@@ -113,7 +113,7 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True, load_pr
         model.to(device)
 
         if load_pretrain == True:
-            checkpoint = torch.load("Results/checkpoints/checkpoint-vehicles_sacertis-200.pth", map_location='cpu')
+            checkpoint = torch.load("/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-vehicles_sacertis-200.pth", map_location='cpu')
             checkpoint_model = checkpoint['model']
             state_dict = model.state_dict()
             for k in ['head.weight', 'head.bias']:
@@ -132,7 +132,7 @@ def main_masked_autoencoder(directory, pretrain = True, finetune = True, load_pr
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_sacertis_finetune")
+                misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "vehicles_sacertis_finetune")
 
         dataset = get_dataset(directory, False, False, True,  sensor = "None", time_frequency = "frequency")
         data_loader_test = torch.utils.data.DataLoader(
@@ -158,6 +158,10 @@ if __name__ == "__main__":
     dir = args.dir 
     model = args.model
     print(args)
+    dataset_train = get_dataset(dir, True, False, False, sensor = "None", time_frequency = "frequency")
+    dataset_finetune = get_dataset(dir, False, True, False, sensor = "None", time_frequency = "frequency")
+    dataset_test = get_dataset(dir, False, False, True, sensor = "None", time_frequency = "frequency")
+    import pdb;pdb.set_trace()
     if model == "SOA":
         main(dir)
     elif model == "autoencoder":
