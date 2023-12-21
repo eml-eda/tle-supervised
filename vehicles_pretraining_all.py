@@ -15,7 +15,7 @@ from Algorithms.models_audio_mae import audioMae_vit_base
 from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
-assert timm.__version__ == "0.3.2"  # version check
+# assert timm.__version__ == "0.3.2"  # version check # I commented this to solve "torch._six does not exist" error
 from util.misc import interpolate_pos_embed
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
@@ -36,16 +36,19 @@ def compute_accuracy(y_test, y_predicted):
 
 def get_all_datasets():
     import os
-    os.environ['CUDA_VISIBLE_DEVICES'] = "2"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "3"
     print("Creating Training Dataset")
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
     window_size = 1190
-    directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/AnomalyDetection_SS335/"
+    # directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/AnomalyDetection_SS335/"
+    directory = "/home/benfenati/code/Datasets/AnomalyDetection_SS335/"
     data_anomaly = AnomalyDetection_SS335.get_data(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = window_size)
-    directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/"
+    # directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/"
+    directory = "/home/benfenati/code/Datasets/Vehicles_Roccaprebalza/"
     data_train, _, _, _ = Vehicles_Roccaprebalza.get_data(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = "y_camion")
-    directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/"
+    # directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/"
+    directory = "/home/benfenati/code/Datasets/Vehicles_Sacertis/"
     data_sacertis, _ = Vehicles_Sacertis.get_data(directory, True, False, False, time_frequency = "frequency")
     data_all = []
     for data in data_sacertis: data_all.append(data[0])
@@ -63,7 +66,7 @@ def get_all_datasets():
     dataset = Dataset_All(data_all)
     return dataset
     
-def pretrain():
+def pretrain(args):
     device = torch.device('cuda')
     lr = 0.25e-3
     total_epochs = 201
@@ -79,16 +82,32 @@ def pretrain():
         drop_last=True)
     torch.manual_seed(0)
     np.random.seed(0)
-    model = audioMae_vit_base(norm_pix_loss=True)
+    embed_dim = 384 # student
+    model = audioMae_vit_base(embed_dim=embed_dim, norm_pix_loss=True)
     model.to(device)
-    param_groups = optim_factory.add_weight_decay(model, 0.05)
+
+    if args.restart_pretraining:
+        print("Loading previous checkpoint model...")
+        start_epoch = 101
+        # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        # checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-100.pth", map_location='cpu')
+        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-student-pretrain_all-100.pth", map_location='cpu') # student
+        checkpoint_model = checkpoint['model']
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        print("Done!")
+    else: 
+        start_epoch = 0
+
+    # param_groups = optim_factory.add_weight_decay(model, 0.05) # modified because 'add_weight_decay' does not exist anymore
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
     optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     print(f"Start pre-training for {total_epochs} epochs")
-    for epoch in range(0, total_epochs):
+    for epoch in range(start_epoch, total_epochs):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
+            # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
+            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student-pretrain_all") # student
 
 ### Creating Finetuning Roccaprebalza
 def finetune_roccaprebalza(args, load_pretrain):
@@ -111,7 +130,8 @@ def finetune_roccaprebalza(args, load_pretrain):
     model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     model.to(device)
     if load_pretrain == True:
-        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -121,7 +141,8 @@ def finetune_roccaprebalza(args, load_pretrain):
         msg = model.load_state_dict(checkpoint_model, strict=False)
         interpolate_pos_embed(model, checkpoint_model)
     # build optimizer with layer-wise lr decay (lrd)
-    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    # param_groups = optim_factory.add_weight_decay(model, 0.05)
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
     optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     criterion = torch.nn.MSELoss()
@@ -141,7 +162,8 @@ def finetune_roccaprebalza(args, load_pretrain):
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_{args.car}_roccaprebalza_finetune")
+            # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_{args.car}_roccaprebalza_finetune")
+            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_{args.car}_roccaprebalza_finetune")
 
     y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
     compute_accuracy(y_test, y_predicted)
@@ -168,7 +190,8 @@ def finetune_sacertis(args, load_pretrain):
     model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     model.to(device)
     if load_pretrain == True:
-        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -178,7 +201,8 @@ def finetune_sacertis(args, load_pretrain):
         msg = model.load_state_dict(checkpoint_model, strict=False)
         interpolate_pos_embed(model, checkpoint_model)
     # build optimizer with layer-wise lr decay (lrd)
-    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    # param_groups = optim_factory.add_weight_decay(model, 0.05)
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
     optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     criterion = torch.nn.MSELoss()
@@ -187,7 +211,8 @@ def finetune_sacertis(args, load_pretrain):
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_vehicles_sacertis_finetune")
+            # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_vehicles_sacertis_finetune")
+            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrainig_all_vehicles_sacertis_finetune")
 
         dataset = Vehicles_Sacertis.get_dataset(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
         data_loader_test = torch.utils.data.DataLoader(
@@ -226,18 +251,21 @@ def finetune_anomaly(args, load_pretrain):
     model = audioMae_vit_base(norm_pix_loss=False)
     model.to(device)
     if load_pretrain == True:
-        checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         msg = model.load_state_dict(checkpoint_model, strict=False)
 
-    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    # param_groups = optim_factory.add_weight_decay(model, 0.05)
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
     optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     print(f"Start training for {total_epochs} epochs")
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "pretrainig_all_anomaly")
+            # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "pretrainig_all_anomaly")
+            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = "pretrainig_all_anomaly")
 
 ### Creating Testing Dataset for Normal Data
     starting_date = datetime.date(2019,5,10) 
@@ -273,13 +301,14 @@ def finetune_anomaly(args, load_pretrain):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
-    parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/",
-                        help='directory')
+    # parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/", help='directory')
+    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/Vehicles_Sacertis/", help='directory')
     parser.add_argument('--car', type=str, default="y_camion", help='y_camion, y_car')
     parser.add_argument('--dataset', type=str, default="Sacertis", help='Roccaprebalza, Anomaly, Sacertis')
     parser.add_argument('--pretrain', type=bool, default=False)
     parser.add_argument('--finetune', type=bool, default=True)
     parser.add_argument('--load_pretrain', type=bool, default=True)
+    parser.add_argument('--restart_pretraining', type=bool, default=False)
     args = parser.parse_args()
     print(args)
     if args.pretrain == True:
@@ -294,3 +323,15 @@ if __name__ == "__main__":
         else:
             print("You can not even read the alternatives...")
             exit(0)
+
+        # run all 2 finetuning tasks
+        # print(f'Finetuning Roccaprebalza on {args.car}...')
+        # args.dir = "/home/benfenati/code/Datasets/Vehicles_Roccaprebalza/"
+        # finetune_roccaprebalza(args, load_pretrain=args.load_pretrain)
+        # args.car = "y_car"
+        # print(f'Finetuning Roccaprebalza on {args.car}...')
+        # finetune_roccaprebalza(args, load_pretrain=args.load_pretrain)
+        
+        # print('Finetuning Sacertis...')
+        # args.dir = "/home/benfenati/code/Datasets/Vehicles_Sacertis/"
+        # finetune_sacertis(args, load_pretrain=args.load_pretrain)
