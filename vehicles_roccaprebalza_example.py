@@ -191,7 +191,7 @@ def evaluate_autoencoder(args, pretrain = True, finetune = True, load_pretrain =
     compute_accuracy(y_test, y_predicted)
 
     df = pd.DataFrame({"Y_true": y_test, "Y_predicted": y_predicted})
-    # df.to_csv(f'Results/Roccaprebalza_autoencoder_{args.car}.csv', index = False, header = True)
+    df.to_csv(f'Results/Roccaprebalza_autoencoder_{args.car}.csv', index = False, header = True)
 
 
 if __name__ == "__main__":

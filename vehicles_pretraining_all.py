@@ -42,13 +42,13 @@ def get_all_datasets():
     num_days = 7
     window_size = 1190
     # directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/AnomalyDetection_SS335/"
-    directory = "/home/benfenati/code/Datasets/AnomalyDetection_SS335/"
+    directory = "/home/benfenati/code/Datasets/SHM/AnomalyDetection_SS335/"
     data_anomaly = AnomalyDetection_SS335.get_data(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = window_size)
     # directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Roccaprebalza/"
-    directory = "/home/benfenati/code/Datasets/Vehicles_Roccaprebalza/"
+    directory = "/home/benfenati/code/Datasets/SHM/Vehicles_Roccaprebalza/"
     data_train, _, _, _ = Vehicles_Roccaprebalza.get_data(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = "y_camion")
     # directory = "/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/"
-    directory = "/home/benfenati/code/Datasets/Vehicles_Sacertis/"
+    directory = "/home/benfenati/code/Datasets/SHM/Vehicles_Sacertis/"
     data_sacertis, _ = Vehicles_Sacertis.get_data(directory, True, False, False, time_frequency = "frequency")
     data_all = []
     for data in data_sacertis: data_all.append(data[0])
@@ -105,9 +105,9 @@ def pretrain(args):
     print(f"Start pre-training for {total_epochs} epochs")
     for epoch in range(start_epoch, total_epochs):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
-        if epoch % save_interval_epochs == 0:
+        # if epoch % save_interval_epochs == 0:
             # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
-            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student-pretrain_all") # student
+            # misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student-pretrain_all") # student
 
 ### Creating Finetuning Roccaprebalza
 def finetune_roccaprebalza(args, load_pretrain):
@@ -302,7 +302,7 @@ def finetune_anomaly(args, load_pretrain):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     # parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/", help='directory')
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/Vehicles_Sacertis/", help='directory')
+    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Sacertis/", help='directory')
     parser.add_argument('--car', type=str, default="y_camion", help='y_camion, y_car')
     parser.add_argument('--dataset', type=str, default="Sacertis", help='Roccaprebalza, Anomaly, Sacertis')
     parser.add_argument('--pretrain', type=bool, default=False)
