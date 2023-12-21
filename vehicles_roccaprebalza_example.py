@@ -18,7 +18,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 import torch
 from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
 # assert timm.__version__ == "0.3.2"  # version check
@@ -191,7 +191,7 @@ def evaluate_autoencoder(args, pretrain = True, finetune = True, load_pretrain =
     compute_accuracy(y_test, y_predicted)
 
     df = pd.DataFrame({"Y_true": y_test, "Y_predicted": y_predicted})
-    df.to_csv(f'Results/Roccaprebalza_autoencoder_{args.car}.csv', index = False, header = True)
+    # df.to_csv(f'Results/Roccaprebalza_autoencoder_{args.car}.csv', index = False, header = True)
 
 
 if __name__ == "__main__":
