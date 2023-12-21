@@ -13,7 +13,7 @@ from Algorithms.models_audio_mae import audioMae_vit_base
 from Algorithms.models_audio_mae_evaluate import audioMae_vit_base_evaluate
 import timm
 import timm.optim.optim_factory as optim_factory
-assert timm.__version__ == "0.3.2"  # version check
+# assert timm.__version__ == "0.3.2"  # version check
 
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
@@ -91,12 +91,13 @@ def main_masked_autoencoder(args):
         pin_memory='store_true',
         drop_last=True,
     )
-    device = torch.device('cuda')
+    device = torch.device('cuda:0')
     torch.manual_seed(0)
     np.random.seed(0)
     model = audioMae_vit_base(norm_pix_loss=False)
     model.to(device)
-    param_groups = optim_factory.add_weight_decay(model, 0.05)
+    # param_groups = optim_factory.add_weight_decay(model, 0.05)
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
     optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
     loss_scaler = NativeScaler()
     print(f"Start training for {total_epochs} epochs")
@@ -118,7 +119,7 @@ def main_masked_autoencoder(args):
         batch_size=1,
         num_workers=1,
         pin_memory='store_true',
-        drop_last=True,
+        drop_lastv=True,
     )
     losses_normal = evaluate(data_loader_test_normal, model, device)
     df = pd.DataFrame.from_dict(losses_normal)
@@ -142,10 +143,11 @@ def main_masked_autoencoder(args):
 
 def evaluate_autoencoder(args):
     print("Loading the checkpoint from memory")
-    device = torch.device('cuda')
+    device = torch.device('cuda:0')
     model = audioMae_vit_base_evaluate(norm_pix_loss=False)
     model.to(device)
-    checkpoint = torch.load(f"Results/checkpoints/checkpoint--200.pth", map_location='cpu')
+    # checkpoint = torch.load(f"Results/checkpoints/checkpoint--200.pth", map_location='cpu')
+    checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     msg = model.load_state_dict(checkpoint_model, strict=False)
 ### Creating Testing Dataset for Normal Data
@@ -182,7 +184,7 @@ def evaluate_autoencoder(args):
 
 def reconstruct_autoencoder(args):
     print("Loading the checkpoint from memory")
-    device = torch.device('cuda')
+    device = torch.device('cuda:0')
     model = audioMae_vit_base_evaluate(norm_pix_loss=False)
     model.to(device)
     checkpoint = torch.load(f"Results/checkpoints/checkpoint--400.pth", map_location='cpu')

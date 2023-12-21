@@ -60,7 +60,11 @@ class AudioMaskedAutoencoderViT(nn.Module):
 
         self.regressionInputShape = int(decoder_embed_dim * (self.grid_h * self.grid_w) * round((1 - mask_ratio), 2))
         
+        # tag:distillation modification
+        # self.dense = nn.Linear(embed_dim, self.regressionInputShape)
+
         self.fc1 = nn.Linear(self.regressionInputShape, 1, bias=True) #This for v1
+
         #self.fc1 = nn.Linear(embed_dim, self.hiddenSize, bias=True)
         #self.relu = nn.ReLU()
         #self.fc2 = nn.Linear(self.hiddenSize, 1, bias=True)
@@ -187,18 +191,21 @@ class AudioMaskedAutoencoderViT(nn.Module):
         b, l, c = x.shape
         x = x.view(b, self.grid_h, int(self.grid_w * (1 - self.mask_ratio)), c)
         x = self.decoder_blocks(x)
+        # x = self.decoder_norm(x)
         x = self.decoder_norm(x)
+        out1 = x
             
         N, _, _, _ = x.shape  # batch, length, dim
         x = torch.reshape(x, (N, self.regressionInputShape))
-        x = self.fc1(x) #[:, 1:, :]
+        
+        out2 = self.fc1(x) #[:, 1:, :] # tag:distillation modification
 
         #for CLS based regression
         #x = self.fc1(x) #[:, 1:, :]
         #x = self.relu(x)
         #x = self.fc2(x)
 
-        return x
+        return out1, out2
 
     def forward_loss(self, imgs, pred, mask):
         """

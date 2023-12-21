@@ -21,7 +21,7 @@ from Algorithms.models_audio_mae import audioMae_vit_base
 from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
-assert timm.__version__ == "0.3.2"  # version check
+# assert timm.__version__ == "0.3.2"  # version check
 from util.misc import interpolate_pos_embed
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
@@ -162,7 +162,7 @@ def main_autoencoder(args, pretrain = True, finetune = True, load_pretrain = Tru
 
 def evaluate_autoencoder(args, pretrain = True, finetune = True, load_pretrain = True):
     import os
-    os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0"
     device = torch.device('cuda')
     dataset_train, dataset_test = get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
     sampler_test = torch.utils.data.RandomSampler(dataset_test)
@@ -177,7 +177,8 @@ def evaluate_autoencoder(args, pretrain = True, finetune = True, load_pretrain =
 
     model = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     model.to(device)
-    checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-{args.car}_roccaprebalza_finetune-500.pth", map_location='cpu')
+    # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-{args.car}_roccaprebalza_finetune-500.pth", map_location='cpu')
+    checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrainig_all_{args.car}_roccaprebalza_finetune-500.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     state_dict = model.state_dict()
     # for k in ['head.weight', 'head.bias']:
@@ -208,13 +209,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     model = args.model 
     print(args)
-    if args.train == 'Yes':
-        if model == "SOA":
-            main_classical(args)
-        elif model == "autoencoder":
-            main_autoencoder(args, pretrain = args.pretrain, finetune = args.finetune, load_pretrain = args.load_pretrain)
-    else:
-        if model == "SOA":
-            main_classical(args)
-        elif model == "autoencoder":
-            evaluate_autoencoder(args, pretrain = args.pretrain, finetune = args.finetune, load_pretrain = args.load_pretrain)
+    # if args.train == 'Yes':
+    #     if model == "SOA":
+    #         main_classical(args)
+    #     elif model == "autoencoder":
+    #         main_autoencoder(args, pretrain = args.pretrain, finetune = args.finetune, load_pretrain = args.load_pretrain)
+    # else:
+    #     if model == "SOA":
+    #         main_classical(args)
+    #     elif model == "autoencoder":
+    #         evaluate_autoencoder(args, pretrain = args.pretrain, finetune = args.finetune, load_pretrain = args.load_pretrain)
+    evaluate_autoencoder(args, pretrain = args.pretrain, finetune = args.finetune, load_pretrain = args.load_pretrain)

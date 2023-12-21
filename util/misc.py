@@ -18,7 +18,8 @@ from pathlib import Path
 
 import torch
 import torch.distributed as dist
-from torch._six import inf
+# from torch._six import inf # modified to solve error "torch._six does not exist"
+from torch import inf
 import math
 import pathlib
 import random
@@ -257,6 +258,8 @@ def save_model(output_dir, epoch, model, model_without_ddp, optimizer, loss_scal
     output_dir = Path(output_dir)
     epoch_name = str(epoch)
     checkpoint_paths = [output_dir / (f'checkpoint-{name}-{epoch_name}.pth')]
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
     for checkpoint_path in checkpoint_paths:
         to_save = {
             'model': model_without_ddp.state_dict(),

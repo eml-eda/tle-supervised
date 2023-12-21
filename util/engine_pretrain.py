@@ -122,7 +122,7 @@ def evaluate_finetune(data_loader, model, device):
         targets = targets.to(device, non_blocking=False)
         # compute output
         with torch.cuda.amp.autocast():
-            outputs = model(samples)
+            _, outputs = model(samples) # tag:distillation modification
             outputs = outputs.squeeze()
             loss = criterion(outputs, targets)
         mae1 = L1Loss(outputs, targets)
