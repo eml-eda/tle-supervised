@@ -21,7 +21,7 @@ from Datasets.AnomalyDetection_SS335.get_dataset import get_dataset as get_datas
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/AnomalyDetection_SS335/")
+    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/AnomalyDetection_SS335/")
     parser.add_argument('--window_size', type=int, default=1190)
     parser.add_argument('--lr', type=float, default=0.25e-2)
     parser.add_argument('--epochs', type=int, default=10)
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     teacher = audioMae_vit_base_evaluate(norm_pix_loss=False)
     # teacher = audioMae_vit_base()
     teacher.to(device)
-    checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
+    checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/checkpoint--400.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     msg = teacher.load_state_dict(checkpoint_model, strict=False)
     params, size = get_model_info(teacher)
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     # student model
     embed_dim = 384 # 384, 768(original)
     decoder_embed_dim = 256 # 512(original)
-    student = audioMae_vit_base(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim)
+    student = audioMae_vit_base_evaluate(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim)
     student.to(device)
     params, size = get_model_info(student)
     print("N. params = {}; Size = {:.3f}".format(params, size))
@@ -110,8 +110,9 @@ if __name__ == "__main__":
 
     # testing
     model_to_evaluate = student
+    who = "student"
 
-    # 1) compute mae
+    # 1) Produce predictions
     ### Creating Testing Dataset for Normal Data
     starting_date = datetime.date(2019,5,10)
     num_days = 4
@@ -126,7 +127,7 @@ if __name__ == "__main__":
     )
     losses_normal = evaluate(data_loader_test_normal, model_to_evaluate, device)
     df = pd.DataFrame.from_dict(losses_normal)
-    df.to_csv(f'Results/masked_{args.window_size}samples_normal_student.csv', index = False, header = True)
+    df.to_csv(f'Results/masked_{args.window_size}samples_normal_{who}.csv', index = False, header = True)
         
     ### Creating Testing Dataset for Anomaly Data
     starting_date = datetime.date(2019,4,17) 
@@ -142,9 +143,9 @@ if __name__ == "__main__":
     )
     losses_anomaly = evaluate(data_loader_test_anomaly, model_to_evaluate, device)
     df = pd.DataFrame.from_dict(losses_anomaly)
-    df.to_csv(f'Results/masked_{args.window_size}samples_anomaly_student.csv', index = False, header = True)
+    df.to_csv(f'Results/masked_{args.window_size}samples_anomaly_{who}.csv', index = False, header = True)
 
-    # 2) compute sensitivity, specificity, accuracy
+    # 2) Compute sensitivity, specificity, accuracy
     directory = "/home/benfenati/code/shm/Results/"
     acc_enc = []
     sens_enc = []
@@ -153,8 +154,8 @@ if __name__ == "__main__":
     for dim_filtering in [15,30,60,120, 240]:
         print(f"Dim {dim_filtering}")
         print(f"Autoencoder")
-        data_normal = pd.read_csv(directory + "masked_1190samples_normal_student.csv")
-        data_anomaly = pd.read_csv(directory + "masked_1190samples_anomaly_student.csv")
+        data_normal = pd.read_csv(directory + f"masked_{args.window_size}samples_normal_{who}.csv")
+        data_anomaly = pd.read_csv(directory + f"masked_{args.window_size}samples_anomaly_{who}.csv")
         spec, sens, acc = compute_threshold_accuracy(data_anomaly.values, data_normal.values, None, min, max, only_acc = 1, dim_filtering = dim_filtering)
         acc_enc.append(acc*100)
         sens_enc.append(sens*100)

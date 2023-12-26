@@ -119,7 +119,7 @@ def main_masked_autoencoder(args):
         batch_size=1,
         num_workers=1,
         pin_memory='store_true',
-        drop_lastv=True,
+        drop_last=True,
     )
     losses_normal = evaluate(data_loader_test_normal, model, device)
     df = pd.DataFrame.from_dict(losses_normal)
