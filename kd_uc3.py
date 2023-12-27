@@ -16,16 +16,14 @@ import util.misc as misc
 from util.misc import interpolate_pos_embed
 
 import datetime
-from Datasets.Vehicles_Roccaprebalza.get_dataset import get_dataset as get_dataset_roccaprebalza
+from Datasets.Vehicles_Sacertis.get_dataset import get_dataset as get_dataset_sacertis
 
 from util.engine_pretrain import evaluate_finetune
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--car', type=str, default="y_car", help='y_camion, y_car')
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Roccaprebalza/")
+    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Sacertis/")
     parser.add_argument('--lr', type=float, default=0.25e-5)
     parser.add_argument('--epochs', type=int, default=100)
     args = parser.parse_args()
@@ -36,7 +34,7 @@ if __name__ == "__main__":
     # teacher model
     teacher = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     teacher.to(device)
-    checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrainig_all_{args.car}_roccaprebalza_finetune-500.pth", map_location='cpu')
+    checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/checkpoint-pretrainig_all_vehicles_sacertis_finetune-200.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     state_dict = teacher.state_dict()
     msg = teacher.load_state_dict(checkpoint_model, strict=True)
@@ -64,22 +62,15 @@ if __name__ == "__main__":
     print("N. params = {}; Size = {:.3f}".format(params, size))
 
     # training
-    dataset_train, dataset_test = get_dataset_roccaprebalza(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
+    dataset_train = get_dataset_sacertis(args.dir, False, True, False,  sensor = "None", time_frequency = "frequency")
     sampler_train = torch.utils.data.RandomSampler(dataset_train)
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train, sampler=sampler_train,
-        batch_size=8,
+        batch_size=128,
         num_workers=1,
         pin_memory='store_true',
         drop_last=True)
 
-    data_loader_test = torch.utils.data.DataLoader(
-        dataset_test, shuffle=False,
-        batch_size=1,
-        num_workers=1,
-        pin_memory='store_true',
-        drop_last=True,
-    )
 
     torch.manual_seed(0)
     np.random.seed(0)
@@ -98,8 +89,7 @@ if __name__ == "__main__":
     best_epoch = 0
 
     for epoch in range(args.epochs):
-        if (epoch+1) % 10 == 0: 
-            print("Epoch ", epoch+1)
+        print("Epoch ", epoch+1)
 
         student.train()
         train_loss = 0
@@ -135,5 +125,17 @@ if __name__ == "__main__":
             counter +=1
 
     # testing
-    y_predicted, y_test = evaluate_finetune(data_loader_test, teacher, device)
+    dataset = get_dataset_sacertis(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
+    data_loader_test = torch.utils.data.DataLoader(
+        dataset, shuffle=False,
+        batch_size=1,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )        
+
+    y_predicted, y_test = evaluate_finetune(data_loader_test, student, device)
     compute_accuracy(y_test, y_predicted)
+    
+    student_path = "/home/benfenati/code/tle-supervised/Results/checkpoints/checkpoint-student-finetune-sacertis.pth"
+    torch.save(student, student_path)
