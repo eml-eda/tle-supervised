@@ -82,7 +82,7 @@ def pretrain(args):
         drop_last=True)
     torch.manual_seed(0)
     np.random.seed(0)
-    embed_dim = 384 # student
+    embed_dim = 192 # student 1: 384, student 2: 192
     model = audioMae_vit_base(embed_dim=embed_dim, norm_pix_loss=True)
     model.to(device)
 
@@ -91,7 +91,7 @@ def pretrain(args):
         start_epoch = 101
         # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
         # checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-100.pth", map_location='cpu')
-        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-student-pretrain_all-100.pth", map_location='cpu') # student
+        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-student192-pretrain_all-100.pth", map_location='cpu') # student
         checkpoint_model = checkpoint['model']
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print("Done!")
@@ -105,9 +105,9 @@ def pretrain(args):
     print(f"Start pre-training for {total_epochs} epochs")
     for epoch in range(start_epoch, total_epochs):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
-        # if epoch % save_interval_epochs == 0:
+        if epoch % save_interval_epochs == 0:
             # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
-            # misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student-pretrain_all") # student
+            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student192-pretrain_all") # student
 
 ### Creating Finetuning Roccaprebalza
 def finetune_roccaprebalza(args, load_pretrain):
@@ -323,15 +323,3 @@ if __name__ == "__main__":
         else:
             print("You can not even read the alternatives...")
             exit(0)
-
-        # run all 2 finetuning tasks
-        # print(f'Finetuning Roccaprebalza on {args.car}...')
-        # args.dir = "/home/benfenati/code/Datasets/Vehicles_Roccaprebalza/"
-        # finetune_roccaprebalza(args, load_pretrain=args.load_pretrain)
-        # args.car = "y_car"
-        # print(f'Finetuning Roccaprebalza on {args.car}...')
-        # finetune_roccaprebalza(args, load_pretrain=args.load_pretrain)
-        
-        # print('Finetuning Sacertis...')
-        # args.dir = "/home/benfenati/code/Datasets/Vehicles_Sacertis/"
-        # finetune_sacertis(args, load_pretrain=args.load_pretrain)
