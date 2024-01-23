@@ -36,7 +36,7 @@ def compute_accuracy(y_test, y_predicted):
 
 def get_all_datasets():
     import os
-    os.environ['CUDA_VISIBLE_DEVICES'] = "3"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1, 2, 3"
     print("Creating Training Dataset")
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
@@ -67,7 +67,7 @@ def get_all_datasets():
     return dataset
     
 def pretrain(args):
-    device = torch.device('cuda')
+    device = torch.device('cuda:{}'.format(args.device))
     lr = 0.25e-3
     total_epochs = 201
     warmup_epochs = 100
@@ -82,16 +82,15 @@ def pretrain(args):
         drop_last=True)
     torch.manual_seed(0)
     np.random.seed(0)
-    embed_dim = 192 # student 1: 384, student 2: 192
+    embed_dim = 768 # teacher: 768, student 1: 384, student 2: 192, student 3: 96, student 4: 48, student 5: 24
     model = audioMae_vit_base(embed_dim=embed_dim, norm_pix_loss=True)
     model.to(device)
 
     if args.restart_pretraining:
         print("Loading previous checkpoint model...")
         start_epoch = 101
-        # checkpoint = torch.load(f"/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/checkpoint-pretrain_all-200.pth", map_location='cpu')
-        # checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-100.pth", map_location='cpu')
-        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-student192-pretrain_all-100.pth", map_location='cpu') # student
+        checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-pretrain_all-100.pth", map_location='cpu')
+        # checkpoint = torch.load(f"/home/benfenati/code/shm/checkpoints/checkpoint-student{embed_dim}-pretrain_all-100.pth", map_location='cpu') # student
         checkpoint_model = checkpoint['model']
         msg = model.load_state_dict(checkpoint_model, strict=False)
         print("Done!")
@@ -107,14 +106,15 @@ def pretrain(args):
         train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
             # misc.save_model(output_dir="/baltic/users/shm_mon/SHM_Datasets_2023/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
-            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student192-pretrain_all") # student
+            misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"pretrain_all")
+            # misc.save_model(output_dir="/home/benfenati/code/shm/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"student{embed_dim}-pretrain_all") # student
 
 ### Creating Finetuning Roccaprebalza
 def finetune_roccaprebalza(args, load_pretrain):
     lr = 0.25e-5
     total_epochs = 501
     save_interval_epochs = 100
-    device = torch.device('cuda')
+    device = torch.device('cuda:{}'.format(args.device))
     warmup_epochs = 100
     dataset_train, dataset_test = Vehicles_Roccaprebalza.get_dataset(args.dir, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = args.car)
     data_loader_test = torch.utils.data.DataLoader(
@@ -173,7 +173,7 @@ def finetune_sacertis(args, load_pretrain):
     lr = 0.25e-5
     total_epochs = 201
     save_interval_epochs = 50
-    device = torch.device('cuda')
+    device = torch.device('cuda:{}'.format(args.device))
     warmup_epochs = 100
 
     dataset = Vehicles_Sacertis.get_dataset(args.dir, False, True, False,  sensor = "None", time_frequency = "frequency")
@@ -231,7 +231,7 @@ def finetune_anomaly(args, load_pretrain):
     total_epochs = 401
     warmup_epochs = 50
     save_interval_epochs = 100
-    device = torch.device('cuda')
+    device = torch.device('cuda:{}'.format(args.device))
 
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
@@ -302,6 +302,7 @@ def finetune_anomaly(args, load_pretrain):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     # parser.add_argument('--dir', type=str, default="/baltic/users/shm_mon/SHM_Datasets_2023/Datasets/Vehicles_Sacertis/", help='directory')
+    parser.add_argument('--device', type=str, default=0)
     parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Sacertis/", help='directory')
     parser.add_argument('--car', type=str, default="y_camion", help='y_camion, y_car')
     parser.add_argument('--dataset', type=str, default="Sacertis", help='Roccaprebalza, Anomaly, Sacertis')
