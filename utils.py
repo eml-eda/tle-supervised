@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 def get_model_info(model):
@@ -26,3 +27,12 @@ def compute_accuracy(y_test, y_predicted):
     print("MSE%:", mspe)
     mape = (mae/np.mean(y_test))*100
     print("MAE%:", mape)
+
+
+def millify(n):
+    n = float(n)
+    millnames = ['',' Thousand',' Million',' Billion',' Trillion']
+    millidx = max(0,min(len(millnames)-1,
+                        int(math.floor(0 if n == 0 else math.log10(abs(n))/3))))
+
+    return '{:.0f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
