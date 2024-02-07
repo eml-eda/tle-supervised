@@ -63,7 +63,7 @@ def evaluate(data_loader, model, device):
         losses.append(loss.cpu().numpy())
     # gather the stats from all processes
     print('* mae1@1 {top1.global_avg:.3f} loss(MSE) {losses.global_avg:.3f}'.format(top1=metric_logger.mae1, losses=metric_logger.loss))
-    return losses
+    return losses, metric_logger.mae1 # tag: modification
 
 @torch.no_grad()
 def reconstruct(data_loader, model, device, index):
