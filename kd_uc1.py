@@ -32,7 +32,6 @@ if __name__ == "__main__":
 
     # teacher model
     teacher = audioMae_vit_base_evaluate(norm_pix_loss=False)
-    # teacher = audioMae_vit_base()
     teacher.to(device)
     checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/checkpoint--400.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
