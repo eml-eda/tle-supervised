@@ -92,7 +92,7 @@ def train_one_epoch_finetune(model: torch.nn.Module, criterion: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
         with torch.cuda.amp.autocast():
-            outputs = model(samples)
+            _, outputs = model(samples)
             outputs = outputs.squeeze()
             loss = criterion(outputs, targets.float())
         loss_value = loss.item()

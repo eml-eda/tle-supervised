@@ -211,7 +211,7 @@ class SHMDataset(Dataset):
     def _readLabels(self):        
         print(f"Entering in function _readLabels", end=' ', flush=True)
         start_time = datetime.strptime(self.start_time, '%d/%m/%Y %H:%M')
-        end_time = datetime.strptime(self.end_time, '%d/%m/%Y %H:%M')
+        end_time = datetime.strptime(self.windowStep.end_time, '%d/%m/%Y %H:%M')
         pesaDataDf = pd.read_csv(self.directory + "./dati_pese_dinamiche/dati 2021-12-04_2021-12-12 pesa km 104,450.csv", sep=";", index_col=0)
         pesaDataDf = pesaDataDf[["Id", "StartTimeStr", "ClassId", "GrossWeight", "Velocity", "VelocityUnit"]]
         pesaDataDf["Time"] = pd.to_datetime(pesaDataDf["StartTimeStr"])

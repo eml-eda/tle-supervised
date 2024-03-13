@@ -53,6 +53,7 @@ class pca_class:
             section = ds[values:(values+interval),:]
             if section.shape[0]>0: 
                 section = sklearn.preprocessing.scale(section, axis=1, with_mean=True, with_std=False, copy=False)
+                my_Vx = Vx[:, :self.cf]
                 x_recons = np.linalg.multi_dot([Vx[:, :self.cf], Vx[:, :self.cf].T, section.T])
                 mse_temp =  mse(section, x_recons.T)
                 if output == {}:
