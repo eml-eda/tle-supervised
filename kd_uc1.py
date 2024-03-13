@@ -115,7 +115,7 @@ if __name__ == "__main__":
             
             print(f"Epoch {epoch} -- Loss: {train_loss/counter}")
 
-        torch.save(student.state_dict(), f"Results/checkpoints/checkpoint-{embed_dim}_{decoder_embed_dim}-KD.pth")
+        torch.save(student.state_dict(), f"Results/checkpoints/uc1_checkpoint-{embed_dim}_{decoder_embed_dim}-KD.pth")
         
         # testing
         # 1) Produce predictions
@@ -150,19 +150,3 @@ if __name__ == "__main__":
         losses_anomaly, _ = evaluate(data_loader_test_anomaly, student, device)
         df = pd.DataFrame.from_dict(losses_anomaly)
         df.to_csv(f'Results/masked_{args.window_size}samples_anomaly_{embed_dim}-{decoder_embed_dim}-KD.csv', index = False, header = True)
-
-        # # 2) Compute sensitivity, specificity, accuracy
-        # directory = "/home/benfenati/code/shm/Results/"
-        # acc_enc = []
-        # sens_enc = []
-        # spec_enc = []
-
-        # for dim_filtering in [15,30,60,120, 240]:
-        #     print(f"Dim {dim_filtering}")
-        #     print(f"Autoencoder")
-        #     data_normal = pd.read_csv(directory + f"masked_{args.window_size}samples_normal_{who}.csv")
-        #     data_anomaly = pd.read_csv(directory + f"masked_{args.window_size}samples_anomaly_{who}.csv")
-        #     spec, sens, acc = compute_threshold_accuracy(data_anomaly.values, data_normal.values, None, min, max, only_acc = 1, dim_filtering = dim_filtering)
-        #     acc_enc.append(acc*100)
-        #     sens_enc.append(sens*100)
-        #     spec_enc.append(spec*100)

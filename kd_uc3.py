@@ -156,7 +156,7 @@ if __name__ == "__main__":
             
             print(f"Epoch: {epoch}, Loss: {train_loss}")
 
-        torch.save(student,  f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc3/checkpoint-{embed_dim}-{decoder_embed_dim}-vehicles_sacertis_finetune_KD.pth")
+        torch.save(student,  f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc3_checkpoint-{embed_dim}-{decoder_embed_dim}-vehicles_sacertis_finetune_KD.pth")
         
         # testing
         dataset = get_dataset_sacertis(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")

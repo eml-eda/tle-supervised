@@ -183,7 +183,7 @@ if __name__ == "__main__":
                 
                 print(f"Epoch: {epoch}, Loss: {train_loss}")
 
-            torch.save(student, f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc2/checkpoint-{embed_dim}-{decoder_embed_dim}-{c}_roccaprebalza_finetune_KD.pth")
+            torch.save(student, f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc2_checkpoint-{embed_dim}-{decoder_embed_dim}-{c}_roccaprebalza_finetune_KD.pth")
             
             # testing
             y_predicted, y_test = evaluate_finetune(data_loader_test, student, device)
