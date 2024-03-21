@@ -53,12 +53,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Roccaprebalza/")
-    parser.add_argument('--lr', type=float, default=0.25e-5)
     args = parser.parse_args()
     print(args)
 
     device = torch.device("cuda:{}".format(args.device))
-    lr = 0.25e-3
+    lr = 0.25e-5
     total_epochs = 501
     warmup_epochs = 250
     
@@ -129,7 +128,7 @@ if __name__ == "__main__":
 
             # param_groups = optim_factory.param_groups_weight_decay(student, 0.05)
             # optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
-            optimizer = optim.Adam(student.parameters(), lr=args.lr, weight_decay=1e-6)
+            optimizer = optim.Adam(student.parameters(), lr=lr, weight_decay=1e-6)
             loss_fn_1 = nn.L1Loss()
             loss_fn_2 = nn.L1Loss()
             loss_fn_3 = nn.MSELoss()

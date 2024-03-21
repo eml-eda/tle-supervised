@@ -24,7 +24,6 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/AnomalyDetection_SS335/")
     parser.add_argument('--window_size', type=int, default=1190)
-    parser.add_argument('--lr', type=float, default=0.25e-2)
     parser.add_argument('--epochs', type=int, default=10)
     args = parser.parse_args()
     print(args)

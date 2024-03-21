@@ -38,7 +38,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Sacertis/")
-    # parser.add_argument('--lr', type=float, default=0.25e-5)
     args = parser.parse_args()
     print(args)
 
@@ -52,7 +51,7 @@ if __name__ == "__main__":
             writer = csv.writer(file)
             writer.writerow(header)
 
-    lr = 0.25e-3
+    lr = 0.25e-5
     total_epochs = 201
     warmup_epochs = 50
     save_interval_epochs = 100
