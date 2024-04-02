@@ -37,7 +37,7 @@ In short, we build a Transformer-based Masked Autoencoder inspired by [this](htt
 - in `pretrain_all_datasets.py`  we pre-train our transformer-based masked autoencoder considering all three datasets.
 - in `uc1.py`, `uc2.py` and `uc3.py`, starting from either the pre-trained model or a randomly intialized one, we fine-tune three models, one for each downstream datasets. 
 - in `kd_uc1.py`, `kd_uc2.py` and `kd_uc3.py`, starting from the pre-trained models on all three datasets, we fine-tune models consider the knowledge distillation setup explained in the paper.
-- there are then two distinct plot notebooks (`plot_notebook_uc1.ipynb` and `plot_notebook_uc2-3.ipynb` to reproduce all the graphs presented in the paper.
+- two distinct plot notebooks (`plot_notebook_uc1.ipynb` and `plot_notebook_uc2-3.ipynb`) to reproduce all the graphs presented in the paper.
 
 ### Checkpoints
 We made available also the fine-tuned model weights for the three tasks, UC1, UC2 and UC3. These can be found at the follow
