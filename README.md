@@ -1,5 +1,5 @@
 # Foundation Models for Structural Health Monitoring
-This is the repository for the paper "Foundation Models for Structural Health Monitoring", which has been submitted to the Journal Transactions on Sustainable Computing on March 29th, 2024 and is currently under review. The ArXiv paper can be found [here](link)
+This is the repository for the paper "Foundation Models for Structural Health Monitoring", which has been submitted on March 29th, 2024 and is currently under review. The ArXiv paper can be found [here](link)
 
 ## Abstract
 Structural Health Monitoring (SHM) is a critical task for ensuring the safety and reliability of civil infrastructures, typically realized on bridges and viaducts by means of vibration monitoring.
@@ -38,6 +38,9 @@ In short, we build a Transformer-based Masked Autoencoder inspired by [this](htt
 - in `uc1.py`, `uc2.py` and `uc3.py`, starting from either the pre-trained model or a randomly intialized one, we fine-tune three models, one for each downstream datasets. 
 - in `kd_uc1.py`, `kd_uc2.py` and `kd_uc3.py`, starting from the pre-trained models on all three datasets, we fine-tune models consider the knowledge distillation setup explained in the paper.
 - there are then two distinct plot notebooks (`plot_notebook_uc1.ipynb` and `plot_notebook_uc2-3.ipynb` to reproduce all the graphs presented in the paper.
+
+### Checkpoints
+The `Checkpoint` folder contains the fine-tuned model weights for the three tasks, UC1, UC2 and UC3. 
 
 ## Cite as
 ```
