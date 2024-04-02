@@ -17,7 +17,7 @@ from sklearn.neighbors import KNeighborsRegressor
 
 import torch
 from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
+from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
 import timm.optim.optim_factory as optim_factory
 
 from util.misc import interpolate_pos_embed

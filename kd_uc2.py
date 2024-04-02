@@ -4,8 +4,7 @@ import torch
 import numpy as np
 import argparse
 
-# from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
-from Algorithms.models_audio_mae_regression_modified import audioMae_vit_base_R
+from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
 
 import torch.nn as nn
 import torch.nn.functional as F

@@ -177,7 +177,7 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/AnomalyDetection_SS335/", help='directory')
     parser.add_argument('--model', type=str, default="soa", help="Model to use [soa, autoencoder]")
-    parser.add_argument('--window_size', type=int, default=1190, help='fs = 100')
+    parser.add_argument('--window_size', type=int, default=490, help='fs = 100')
     parser.add_argument('--epochs', type=int, default=401)
     parser.add_argument('--pretrain_all', type=bool, default=False)
     parser.add_argument('--batch_size', type=int, default=64)
