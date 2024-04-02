@@ -12,8 +12,9 @@ Here you can see an overview of our processing pipeline for AD and TLE tasks. In
 ![](images/processing_pipeline.png)
 
 Our base architecture of our transformer-based masked autoencoder used during pre-training and during the fine-tuning on UC1 is the following. On UC2 and UC3 the Decoder is replace with 2 fully connected layers as regression tails. Have a look a the paper for better understanding.
-![](images/base_model.png).
+![](images/base_model.jpg)
 
+For a full overview of the obtained results, refer to the [paper](link).
 
 
 ## Repository organization
