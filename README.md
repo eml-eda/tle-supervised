@@ -40,7 +40,7 @@ In short, we build a Transformer-based Masked Autoencoder inspired by [this](htt
 - there are then two distinct plot notebooks (`plot_notebook_uc1.ipynb` and `plot_notebook_uc2-3.ipynb` to reproduce all the graphs presented in the paper.
 
 ### Checkpoints
-The `Checkpoint` folder contains the fine-tuned model weights for the three tasks, UC1, UC2 and UC3. 
+We made available also the fine-tuned model weights for the three tasks, UC1, UC2 and UC3. These can be found at the follow
 
 ## Cite as
 ```
