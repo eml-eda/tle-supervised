@@ -6,9 +6,8 @@ Data_old/
 Data/
 Results/
 logs/
-develop.ipynb
 Checkpoints/
-kd_notebook.ipynb
+*.ipynb
 
 ### C ###
 # Prerequisites
