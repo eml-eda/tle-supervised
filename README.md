@@ -16,7 +16,17 @@ Our base architecture of our transformer-based masked autoencoder used during pr
 
 For a full overview of the obtained results, refer to the [paper](link).
 
+## Setup
+You can create your own python environment with: 
+```
+python3 -m venv --system-site-packages ./pyenv
+```
 
+Then, install the required packages with:
+```
+source ./pyenv/bin/activate
+pip install -r requirements.txt
+```
 ## Repository organization
 ### Datasets
 The `Datasets` folder contains the DataLoader for the three downstream datasets: 
