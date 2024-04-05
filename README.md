@@ -1,5 +1,5 @@
 # Foundation Models for Structural Health Monitoring
-This is the repository for the paper "Foundation Models for Structural Health Monitoring", which has been submitted on March 29th, 2024 and is currently under review. The ArXiv paper can be found [here](https://arxiv.org/abs/2404.02944)
+This is the repository for the paper "Foundation Models for Structural Health Monitoring", which has been submitted on March 29th, 2024 and is currently under review. The ArXiv paper can be found [here](https://arxiv.org/abs/2404.02944).
 
 ## Abstract
 Structural Health Monitoring (SHM) is a critical task for ensuring the safety and reliability of civil infrastructures, typically realized on bridges and viaducts by means of vibration monitoring.
