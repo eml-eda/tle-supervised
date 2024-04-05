@@ -1,5 +1,5 @@
 # Foundation Models for Structural Health Monitoring
-This is the repository for the paper "Foundation Models for Structural Health Monitoring", which has been submitted on March 29th, 2024 and is currently under review. The ArXiv paper can be found [here](link)
+This is the repository for the paper "Foundation Models for Structural Health Monitoring", which has been submitted on March 29th, 2024 and is currently under review. The ArXiv paper can be found [here](https://arxiv.org/abs/2404.02944)
 
 ## Abstract
 Structural Health Monitoring (SHM) is a critical task for ensuring the safety and reliability of civil infrastructures, typically realized on bridges and viaducts by means of vibration monitoring.
@@ -12,7 +12,7 @@ Here you can see an overview of our processing pipeline for AD and TLE tasks. In
 Our base architecture of our transformer-based masked autoencoder used during pre-training and during the fine-tuning on UC1 is the following. On UC2 and UC3 the Decoder is replace with 2 fully connected layers as regression tails. Have a look a the paper for better understanding.
 ![](images/base_model.jpg)
 
-For a full overview of the obtained results, refer to the [paper](link).
+For a full overview of the obtained results, refer to the [paper](https://arxiv.org/abs/2404.02944).
 
 ## Setup
 You can create your own python environment with: 
@@ -52,9 +52,12 @@ Fine-tuned model weights for the three tasks, UC1, UC2 and UC3 are available at 
 
 ## Cite as
 ```
-@misc{eval-harness,
-  author       = {Benfenati, Luca and Jahier Pagliari, Daniele and Zanatta, Luca and Bedoya Velez, Yhorman Alexander and Acquaviva, Andrea and Poncino, Massimo and Macii, Enrico and Benini, Luca and Burrello, Alessio},
-  title        = {Foundation Models for Structural Health Monitoring},
-  url          = {...}
+@misc{benfenati2024foundation,
+      title={Foundation Models for Structural Health Monitoring}, 
+      author={Luca Benfenati and Daniele Jahier Pagliari and Luca Zanatta and Yhorman Alexander Bedoya Velez and Andrea Acquaviva and Massimo Poncino and Enrico Macii and Luca Benini and Alessio Burrello},
+      year={2024},
+      eprint={2404.02944},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
