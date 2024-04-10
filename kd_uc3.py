@@ -36,7 +36,7 @@ def compute_accuracy(y_test, y_predicted):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Sacertis/")
+    parser.add_argument('--dir', type=str, default="/home/benfenati/data_folder/SHM/Vehicles_Sacertis/")
     args = parser.parse_args()
     print(args)
 

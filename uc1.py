@@ -175,7 +175,7 @@ def evaluate_soa(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/AnomalyDetection_SS335/", help='directory')
+    parser.add_argument('--dir', type=str, default="/home/benfenati/data_folder/SHM/AnomalyDetection_SS335/", help='directory')
     parser.add_argument('--model', type=str, default="soa", help="Model to use [soa, autoencoder]")
     parser.add_argument('--window_size', type=int, default=490, help='fs = 100')
     parser.add_argument('--epochs', type=int, default=401)

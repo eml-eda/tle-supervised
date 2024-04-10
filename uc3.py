@@ -188,7 +188,7 @@ def main_autoencoder(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0, help='gpu device')
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Roccaprebalza/", help='directory')
+    parser.add_argument('--dir', type=str, default="/home/benfenati/data_folder/SHM/Vehicles_Sacertis/", help='directory')
     parser.add_argument('--model', type=str, default="soa", help='soa, autoencoder')
     parser.add_argument('--no_pretrain', type=bool, default=False)
     parser.add_argument('--pretrain_uc', type=bool, default=False)

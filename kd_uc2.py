@@ -51,7 +51,7 @@ def adjust_learning_rate_finetune(optimizer, epoch, lr, total_epochs, warmup_epo
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
     parser.add_argument('--device', type=int, default=0)
-    parser.add_argument('--dir', type=str, default="/home/benfenati/code/Datasets/SHM/Vehicles_Roccaprebalza/")
+    parser.add_argument('--dir', type=str, default="/home/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/")
     args = parser.parse_args()
     print(args)
 
