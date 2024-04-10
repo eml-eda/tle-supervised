@@ -8,7 +8,7 @@ They are offline:
 ### Notebooks
 
 - Dataset_creation.ipynb: scripts to create and test the dataset of different window dimensions from DataFrame__sensori_rilevazioni_granulare_acc_normalizzate.pkl. Slightly different to the one stored and generated from Giovanni.
-- SVR_example_SUSCOM_paper.ipynb: example of script to reproduce the results on the paper with 50 features, on dataset with windows of 60 seconds.
+- SVR_example_SUSCOM_paper.ipynb: example of script to reproduce the results on the paper with 50 features, on dataset with windows of 60 seconds. 
 
 
 ## Experiments
