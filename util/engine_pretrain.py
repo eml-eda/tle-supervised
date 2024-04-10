@@ -63,7 +63,7 @@ def evaluate(data_loader, model, device):
         losses.append(loss.cpu().numpy())
     # gather the stats from all processes
     print('* mae1@1 {top1.global_avg:.3f} loss(MSE) {losses.global_avg:.3f}'.format(top1=metric_logger.mae1, losses=metric_logger.loss))
-    return losses
+    return losses, metric_logger.mae1 # tag: modification
 
 @torch.no_grad()
 def reconstruct(data_loader, model, device, index):
@@ -92,7 +92,7 @@ def train_one_epoch_finetune(model: torch.nn.Module, criterion: torch.nn.Module,
         samples = samples.to(device, non_blocking=True)
         targets = targets.to(device, non_blocking=True)
         with torch.cuda.amp.autocast():
-            outputs = model(samples)
+            _, outputs = model(samples)
             outputs = outputs.squeeze()
             loss = criterion(outputs, targets.float())
         loss_value = loss.item()
@@ -122,7 +122,7 @@ def evaluate_finetune(data_loader, model, device):
         targets = targets.to(device, non_blocking=False)
         # compute output
         with torch.cuda.amp.autocast():
-            outputs = model(samples)
+            _, outputs = model(samples) # tag:distillation modification
             outputs = outputs.squeeze()
             loss = criterion(outputs, targets)
         mae1 = L1Loss(outputs, targets)

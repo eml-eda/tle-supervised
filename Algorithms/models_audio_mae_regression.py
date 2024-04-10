@@ -51,9 +51,20 @@ class AudioMaskedAutoencoderViT(nn.Module):
 
         # --------------------------------------------------------------------------
         # Regression task
-        self.regressionInputShape = int(embed_dim * (self.grid_h * self.grid_w) * round((1 - mask_ratio), 2) + embed_dim)
+        self.decoder_embed = nn.Linear(embed_dim, decoder_embed_dim, bias=True)
+
+        self.decoder_blocks = SwinBlock(decoder_embed_dim, decoder_num_heads, decoder_embed_dim // num_heads,
+                      int(mlp_ratio * decoder_embed_dim),
+                      shifted=True, window_size=4, relative_pos_embedding=True)
+        self.decoder_norm = norm_layer(decoder_embed_dim)
+
+        self.regressionInputShape = int(decoder_embed_dim * (self.grid_h * self.grid_w) * round((1 - mask_ratio), 2))
         
+        # tag:distillation modification
+        # self.dense = nn.Linear(embed_dim, self.regressionInputShape)
+
         self.fc1 = nn.Linear(self.regressionInputShape, 1, bias=True) #This for v1
+
         #self.fc1 = nn.Linear(embed_dim, self.hiddenSize, bias=True)
         #self.relu = nn.ReLU()
         #self.fc2 = nn.Linear(self.hiddenSize, 1, bias=True)
@@ -176,16 +187,25 @@ class AudioMaskedAutoencoderViT(nn.Module):
 
     def forward_regression(self, x, ids_restore):
         #For complete output regression
-        N, L, D = x.shape  # batch, length, dim
+        x = self.decoder_embed(x[:, 1:, :])
+        b, l, c = x.shape
+        x = x.view(b, self.grid_h, int(self.grid_w * (1 - self.mask_ratio)), c)
+        x = self.decoder_blocks(x)
+        # x = self.decoder_norm(x)
+        x = self.decoder_norm(x)
+        out1 = x
+            
+        N, _, _, _ = x.shape  # batch, length, dim
         x = torch.reshape(x, (N, self.regressionInputShape))
-        x = self.fc1(x) #[:, 1:, :]
+        
+        out2 = self.fc1(x) #[:, 1:, :] # tag:distillation modification
 
         #for CLS based regression
         #x = self.fc1(x) #[:, 1:, :]
         #x = self.relu(x)
         #x = self.fc2(x)
 
-        return x
+        return out1, out2
 
     def forward_loss(self, imgs, pred, mask):
         """
@@ -205,7 +225,7 @@ class AudioMaskedAutoencoderViT(nn.Module):
         loss = (loss * mask).sum() / mask.sum()  # mean loss on removed patches
         return loss
 
-    def forward(self, imgs, mask_ratio=0.8):
+    def forward(self, imgs):
         latent, mask, ids_restore = self.forward_encoder(imgs, self.mask_ratio)
         pred = self.forward_regression(latent, ids_restore)  # [N, L, p*p*1]
         #loss = self.forward_loss(imgs, pred, mask)

@@ -200,7 +200,3 @@ class SwinBlock(nn.Module):
         x = self.attention_block(x)
         x = self.mlp_block(x)
         return x
-
-
-
-
