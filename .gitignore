@@ -8,6 +8,7 @@ Results/
 logs/
 Checkpoints/
 *.ipynb
+develop.ipynb
 
 ### C ###
 # Prerequisites
