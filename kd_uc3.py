@@ -43,7 +43,7 @@ if __name__ == "__main__":
     device = torch.device("cuda:{}".format(args.device))
 
     # create results file
-    filename = '/home/benfenati/code/tle-supervised/Results/uc3_results_kd_finetuning_pt2.csv' # tag:change name
+    filename = '/home/benfenati/code/tle-supervised/results/uc3_results_kd_finetuning_pt2.csv' # tag:change name
     header = ["embed_dim", "decoder_dim", "mse", "mae", "r2", "mspe", "mape"]
     if not os.path.exists(filename):
         with open(filename, 'w', newline='') as file:
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     # teacher model
     teacher = audioMae_vit_base_R(norm_pix_loss=True, mask_ratio = 0.2)
     teacher.to(device)
-    checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc3/checkpoint-768-512_vehicles_sacertis_finetune-200.pth", map_location='cpu')
+    checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/uc3/checkpoint-768-512_vehicles_sacertis_finetune-200.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     state_dict = teacher.state_dict()
     msg = teacher.load_state_dict(checkpoint_model, strict=True)
@@ -79,8 +79,8 @@ if __name__ == "__main__":
                                     norm_pix_loss=True, mask_ratio = 0.2)
         student.to(device)
 
-        # checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc23/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu') #tag:change name
-        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc1/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu')
+        # checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/uc23/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu') #tag:change name
+        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/uc1/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         state_dict = student.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -154,7 +154,7 @@ if __name__ == "__main__":
             
             print(f"Epoch: {epoch}, Loss: {train_loss}")
 
-        torch.save(student,  f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc3_checkpoint-{embed_dim}-{decoder_embed_dim}-vehicles_sacertis_finetune_KD.pth")
+        torch.save(student,  f"/home/benfenati/code/tle-supervised/results/checkpoints/uc3_checkpoint-{embed_dim}-{decoder_embed_dim}-vehicles_sacertis_finetune_KD.pth")
         
         # testing
         dataset = get_dataset_sacertis(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")

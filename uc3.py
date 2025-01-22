@@ -59,11 +59,11 @@ def main_soa(args):
         print(f"{names[i]} Prediction")
         compute_accuracy(labels_test, y_predicted)
         df = pd.DataFrame({"Y_true": labels_test, "Y_predicted": y_predicted})
-        df.to_csv(f'Results/Sacertis_{names[i]}.csv', index = False, header = True)
+        df.to_csv(f'results/Sacertis_{names[i]}.csv', index = False, header = True)
         
 def main_autoencoder(args):
     # create results file
-    filename = f'/home/benfenati/code/tle-supervised/Results/uc3_results_{args.no_pretrain}-{args.pretrain_uc}-{args.pretrain_all}.csv' # tag:change name
+    filename = f'/home/benfenati/code/tle-supervised/results/uc3_results_{args.no_pretrain}-{args.pretrain_uc}-{args.pretrain_all}.csv' # tag:change name
     header = ["embed_dim", "decoder_dim", "mse", "mae", "r2", "mspe", "mape"]
     if not os.path.exists(filename):
         with open(filename, 'w', newline='') as file:
@@ -120,7 +120,7 @@ def main_autoencoder(args):
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="/home/benfenati/code/tle-supervised/Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"_sacertis")
+                misc.save_model(output_dir="/home/benfenati/code/tle-supervised/results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, name = f"_sacertis")
     
     # Pretrain All Setup
     elif args.pretrain_all == True:
@@ -128,7 +128,7 @@ def main_autoencoder(args):
                                     decoder_embed_dim=decoder_embed_dim, 
                                     norm_pix_loss=True, mask_ratio = 0.2)
         model.to(device)
-        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu') # tag:change name
+        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu') # tag:change name
         checkpoint_model = checkpoint['model']
         state_dict = model.state_dict()
         for k in ['head.weight', 'head.bias']:
@@ -163,7 +163,7 @@ def main_autoencoder(args):
     for epoch in range(0, total_epochs):
         train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="/home/benfenati/code/tle-supervised/Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, 
+            misc.save_model(output_dir="/home/benfenati/code/tle-supervised/results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, 
                             name = f"{embed_dim}-{decoder_embed_dim}_sacertis_finetune_{args.no_pretrain}-{args.pretrain_uc}-{args.pretrain_all}")
 
 

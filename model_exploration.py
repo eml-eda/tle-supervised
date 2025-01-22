@@ -21,7 +21,7 @@ if __name__ == "__main__":
     print(args)
 
     # create results file
-    filename = '/home/benfenati/code/tle-supervised/Results/model_exploration_results.csv' # tag:change name
+    filename = '/home/benfenati/code/tle-supervised/results/model_exploration_results.csv' # tag:change name
     header = ["encoder_dim", "decoder_embed_dim", "mae"]
     if not os.path.exists(filename):
         with open(filename, 'w', newline='') as file:
@@ -78,7 +78,7 @@ if __name__ == "__main__":
         for epoch in range(0, total_epochs):
             train_stats = train_one_epoch(model, data_loader_train, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
             if epoch % save_interval_epochs == 0:
-                misc.save_model(output_dir="/home/benfenati/code/tle-supervised/Results/checkpoints/model_exploration", 
+                misc.save_model(output_dir="/home/benfenati/code/tle-supervised/results/checkpoints/model_exploration", 
                                 model=model, model_without_ddp=model, optimizer=optimizer, 
                                 loss_scaler=loss_scaler, epoch=epoch, 
                                 name = "{}-{}-pretrain_all".format(embed_dim, decoder_embed_dim))

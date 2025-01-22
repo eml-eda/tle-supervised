@@ -91,7 +91,7 @@ def plot_results_autoencoder(data, data2 , fig):
 
 if __name__ == "__main__":
     
-    directory = "/home/benfenati/code/tle-supervised/Results/uc1_results/"
+    directory = "/home/benfenati/code/tle-supervised/results/uc1_results/"
     dim_filtering = 120
     # colors = ['#A9D18E', '#9DC3E6']
     colors = ['#73AD4C', '#6BA7DE']
@@ -156,7 +156,7 @@ if __name__ == "__main__":
     plt.subplots_adjust(hspace=0.1)
     # plt.show()
     plt.tight_layout()
-    plt.savefig("Results/images/Anomaly_detection_Bars.pdf", dpi=600)
+    plt.savefig("results/images/Anomaly_detection_Bars.pdf", dpi=600)
 
     ## --------------------- 2) Reconstruction plot ---------------------
     data_normal = pd.read_csv(directory + "PCA_490samples_normal.csv")
@@ -173,5 +173,5 @@ if __name__ == "__main__":
     compute_threshold_accuracy(data_anomaly.values, data_normal.values, axs[1], min, max)
     axs[1].tick_params(labelsize=12)
     plt.tight_layout()
-    plt.savefig(f"Results/images/Anomaly_detection_MSE.pdf", dpi = 600)
+    plt.savefig(f"results/images/Anomaly_detection_MSE.pdf", dpi = 600)
     # plt.show()

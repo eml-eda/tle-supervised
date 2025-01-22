@@ -54,7 +54,7 @@ def main_PCA(args):
     pca_result_anomaly  = pca.predict(dataset_test_anomaly, Vx)
     # import pdb;pdb.set_trace()
     
-    name = f"Results/PCA_{args.window_size}samples"
+    name = f"results/PCA_{args.window_size}samples"
     df = pd.DataFrame.from_dict(pca_result_normal)
     df.to_csv(f'{name}_normal.csv', index = False, header = True)
     df = pd.DataFrame.from_dict(pca_result_anomaly)
@@ -87,7 +87,7 @@ def main_autoencoder(args):
     torch.manual_seed(0)
     np.random.seed(0)
     if args.pretrain_all == True:
-        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu')
+        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/checkpoint-{embed_dim}-{decoder_embed_dim}-pretrain_all-200.pth", map_location='cpu')
         checkpoint_model = checkpoint['model']
         msg = model.load_state_dict(checkpoint_model, strict=False)
     else: 
@@ -103,7 +103,7 @@ def main_autoencoder(args):
             model, data_loader_train,
             optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
         if epoch % save_interval_epochs == 0:
-            misc.save_model(output_dir="Results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer,
+            misc.save_model(output_dir="results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer,
                 loss_scaler=loss_scaler, epoch=epoch, name="{}-{}-{}".format(args.window_size, embed_dim, decoder_embed_dim))
 
     ### Creating Testing Dataset for Normal Data
@@ -120,7 +120,7 @@ def main_autoencoder(args):
     )
     losses_normal, _ = evaluate(data_loader_test_normal, model, device)
     df = pd.DataFrame.from_dict(losses_normal)
-    df.to_csv(f'Results/masked_{args.window_size}samples_normal_{embed_dim}-{decoder_embed_dim}.csv', index = False, header = True)
+    df.to_csv(f'results/masked_{args.window_size}samples_normal_{embed_dim}-{decoder_embed_dim}.csv', index = False, header = True)
         
     ### Creating Testing Dataset for Anomaly Data
     starting_date = datetime.date(2019,4,17) 
@@ -136,11 +136,11 @@ def main_autoencoder(args):
     )
     losses_anomaly, _ = evaluate(data_loader_test_anomaly, model, device)
     df = pd.DataFrame.from_dict(losses_anomaly)
-    df.to_csv(f'Results/masked_{args.window_size}samples_anomaly_{embed_dim}-{decoder_embed_dim}.csv', index = False, header = True)
+    df.to_csv(f'results/masked_{args.window_size}samples_anomaly_{embed_dim}-{decoder_embed_dim}.csv', index = False, header = True)
 
 def evaluate_autoencoder(args):
     # test autoencoder
-    directory = "/home/benfenati/code/tle-supervised/Results/"
+    directory = "/home/benfenati/code/tle-supervised/results/"
     acc_enc = []
     sens_enc = []
     spec_enc = []
@@ -157,7 +157,7 @@ def evaluate_autoencoder(args):
 
 def evaluate_soa(args):
     # test PCA
-    directory = "/home/benfenati/code/tle-supervised/Results/"
+    directory = "/home/benfenati/code/tle-supervised/results/"
     acc_enc = []
     sens_enc = []
     spec_enc = []

@@ -33,7 +33,7 @@ if __name__ == "__main__":
     # teacher model
     teacher = audioMae_vit_base_evaluate(norm_pix_loss=False)
     teacher.to(device)
-    checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/Results/checkpoints/uc1/checkpoint--400.pth", map_location='cpu')
+    checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/uc1/checkpoint--400.pth", map_location='cpu')
     checkpoint_model = checkpoint['model']
     msg = teacher.load_state_dict(checkpoint_model, strict=False)
     params, size = get_model_info(teacher)
@@ -114,7 +114,7 @@ if __name__ == "__main__":
             
             print(f"Epoch {epoch} -- Loss: {train_loss/counter}")
 
-        torch.save(student.state_dict(), f"Results/checkpoints/uc1_checkpoint-{embed_dim}_{decoder_embed_dim}-KD.pth")
+        torch.save(student.state_dict(), f"results/checkpoints/uc1_checkpoint-{embed_dim}_{decoder_embed_dim}-KD.pth")
         
         # testing
         # 1) Produce predictions
@@ -132,7 +132,7 @@ if __name__ == "__main__":
         )
         losses_normal, _ = evaluate(data_loader_test_normal, student, device)
         df = pd.DataFrame.from_dict(losses_normal)
-        df.to_csv(f'Results/masked_{args.window_size}samples_normal_{embed_dim}-{decoder_embed_dim}-KD.csv', index = False, header = True)
+        df.to_csv(f'results/masked_{args.window_size}samples_normal_{embed_dim}-{decoder_embed_dim}-KD.csv', index = False, header = True)
             
         ### Creating Testing Dataset for Anomaly Data
         starting_date = datetime.date(2019,4,17) 
@@ -148,4 +148,4 @@ if __name__ == "__main__":
         )
         losses_anomaly, _ = evaluate(data_loader_test_anomaly, student, device)
         df = pd.DataFrame.from_dict(losses_anomaly)
-        df.to_csv(f'Results/masked_{args.window_size}samples_anomaly_{embed_dim}-{decoder_embed_dim}-KD.csv', index = False, header = True)
+        df.to_csv(f'results/masked_{args.window_size}samples_anomaly_{embed_dim}-{decoder_embed_dim}-KD.csv', index = False, header = True)

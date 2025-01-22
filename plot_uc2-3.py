@@ -19,8 +19,8 @@ def equation(a, b):
 if __name__ == "__main__":
 
     colors = ['#73AD4C', '#6BA7DE']
-    directory_uc2 = "/home/benfenati/code/tle-supervised/Results/uc2_results/"
-    directory_uc3 = "/home/benfenati/code/tle-supervised/Results/uc3_results/"
+    directory_uc2 = "/home/benfenati/code/tle-supervised/results/uc2_results/"
+    directory_uc3 = "/home/benfenati/code/tle-supervised/results/uc3_results/"
 
 
     ## --------------------- Retrieve data to plot ---------------------
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots(1, 2, figsize= (8,4))#,sharey=True)
     methods = ['Heavy Vehicles', 'Light Vehicles']
     files = ['y_camion', 'y_car']
-    base_string = './Results/uc2_results/Roccaprebalza_'
+    base_string = './results/uc2_results/Roccaprebalza_'
     colors = ['#73AD4C', '#6BA7DE']
 
     for i, lab in enumerate(methods):
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         ax[i].yaxis.grid(True)
         ax[i].tick_params(labelsize=12)
         plt.tight_layout()
-        plt.savefig('Results/images/Roccaprebalza_regression_autoencoder.pdf', dpi=600)
+        plt.savefig('results/images/Roccaprebalza_regression_autoencoder.pdf', dpi=600)
 
     ## --------------------- 2) Pretraining impact plot ---------------------
     MAE_pretrain_all = [9.98,  13.10, 29.29]
@@ -124,7 +124,7 @@ if __name__ == "__main__":
     axs.legend(fontsize=12)
     axs.yaxis.grid(True)
     plt.subplots_adjust(hspace=0.1)
-    plt.savefig("Results/images/Pretraining.pdf", dpi=600)
+    plt.savefig("results/images/Pretraining.pdf", dpi=600)
     plt.show()
 
     ## --------------------- 3) Regular vs KD-enanched fine-tuning plot ---------------------
@@ -177,5 +177,5 @@ if __name__ == "__main__":
     plt.subplots_adjust(bottom=0.13)
     # plt.subplots_adjust(left=0.09)
     plt.tight_layout()
-    plt.savefig("Results/images/regular_vs_kd.pdf", dpi=600, bbox_inches='tight')
+    plt.savefig("results/images/regular_vs_kd.pdf", dpi=600, bbox_inches='tight')
     plt.show()
