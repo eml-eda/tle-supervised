@@ -1,5 +1,5 @@
-from Datasets.AnomalyDetection_SS335.get_dataset import get_dataset, get_data
-from Algorithms.pca import pca_class
+from data.AnomalyDetection_SS335.get_dataset import get_dataset, get_data
+from models.pca import pca_class
 import datetime
 import numpy as np 
 import pandas as pd 
@@ -9,8 +9,8 @@ import datetime as dt
 import sklearn.preprocessing
 
 import torch
-from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_evaluate import audioMae_vit_base_evaluate
+from models.models_audio_mae import audioMae_vit_base
+from models.models_audio_mae_evaluate import audioMae_vit_base_evaluate
 import timm
 import timm.optim.optim_factory as optim_factory
 

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_audio_mae_regression import audioMae_vit_base_R
 import scipy.stats as stats
 import matplotlib.gridspec as gridspec
 

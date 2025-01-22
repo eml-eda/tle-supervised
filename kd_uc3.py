@@ -4,7 +4,7 @@ import numpy as np
 import argparse
 import csv
 
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_audio_mae_regression import audioMae_vit_base_R
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,7 +16,7 @@ import util.misc as misc
 from util.misc import interpolate_pos_embed
 
 import datetime
-from Datasets.Vehicles_Sacertis.get_dataset import get_dataset as get_dataset_sacertis
+from data.Vehicles_Sacertis.get_dataset import get_dataset as get_dataset_sacertis
 
 from util.engine_pretrain import evaluate_finetune
 

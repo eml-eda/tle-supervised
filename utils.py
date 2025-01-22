@@ -5,9 +5,9 @@ import datetime
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from torch.utils.data import Dataset
 
-import Datasets.Vehicles_Sacertis.get_dataset as Vehicles_Sacertis
-import Datasets.AnomalyDetection_SS335.get_dataset as AnomalyDetection_SS335
-import Datasets.Vehicles_Roccaprebalza.get_dataset as Vehicles_Roccaprebalza
+import data.Vehicles_Sacertis.get_dataset as Vehicles_Sacertis
+import data.AnomalyDetection_SS335.get_dataset as AnomalyDetection_SS335
+import data.Vehicles_Roccaprebalza.get_dataset as Vehicles_Roccaprebalza
 
 dim_filtering = 120
 

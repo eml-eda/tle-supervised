@@ -4,8 +4,8 @@ import numpy as np
 import argparse
 import util.misc as misc
 
-from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_evaluate import audioMae_vit_base_evaluate
+from models.models_audio_mae import audioMae_vit_base
+from models.models_audio_mae_evaluate import audioMae_vit_base_evaluate
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,7 +17,7 @@ from utils import compute_threshold_accuracy
 
 import datetime
 
-from Datasets.AnomalyDetection_SS335.get_dataset import get_dataset as get_dataset_ss335
+from data.AnomalyDetection_SS335.get_dataset import get_dataset as get_dataset_ss335
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')

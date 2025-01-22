@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
-from Algorithms.models_audio_mae import audioMae_vit_base
+from models.models_audio_mae import audioMae_vit_base
 
 def compute_threshold_accuracy(anomalies, normal, ax, min, max, only_acc = 0, dim_filtering=dim_filtering):
     new_normal = []

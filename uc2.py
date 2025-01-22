@@ -1,7 +1,7 @@
 # Roccaprebalza
 import os
 import csv
-from Datasets.Vehicles_Roccaprebalza.get_dataset import get_data, get_dataset
+from data.Vehicles_Roccaprebalza.get_dataset import get_data, get_dataset
 
 import numpy as np
 from sklearn.metrics import mean_squared_error
@@ -24,8 +24,8 @@ from sklearn.neighbors import KNeighborsRegressor
 
 
 import torch
-from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_audio_mae import audioMae_vit_base
+from models.models_audio_mae_regression import audioMae_vit_base_R
 import timm
 import timm.optim.optim_factory as optim_factory
 from util.misc import interpolate_pos_embed

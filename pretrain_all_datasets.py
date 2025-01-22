@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from util.engine_pretrain import train_one_epoch
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-from Algorithms.models_audio_mae import audioMae_vit_base
+from models.models_audio_mae import audioMae_vit_base
 import timm.optim.optim_factory as optim_factory
 import util.misc as misc
 import argparse

@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import argparse
 
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_audio_mae_regression import audioMae_vit_base_R
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -19,7 +19,7 @@ import util.misc as misc
 from util.misc import interpolate_pos_embed
 
 import datetime
-from Datasets.Vehicles_Roccaprebalza.get_dataset import get_dataset as get_dataset_roccaprebalza
+from data.Vehicles_Roccaprebalza.get_dataset import get_dataset as get_dataset_roccaprebalza
 
 from util.engine_pretrain import evaluate_finetune
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score

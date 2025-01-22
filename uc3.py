@@ -1,4 +1,4 @@
-from Datasets.Vehicles_Sacertis.get_dataset import get_dataset, get_data
+from data.Vehicles_Sacertis.get_dataset import get_dataset, get_data
 
 import os
 import csv
@@ -16,8 +16,8 @@ from sklearn.tree import DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsRegressor
 
 import torch
-from Algorithms.models_audio_mae import audioMae_vit_base
-from Algorithms.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_audio_mae import audioMae_vit_base
+from models.models_audio_mae_regression import audioMae_vit_base_R
 import timm.optim.optim_factory as optim_factory
 
 from util.misc import interpolate_pos_embed
