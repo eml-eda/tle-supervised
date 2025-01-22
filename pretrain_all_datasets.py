@@ -13,6 +13,10 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=int, default=0)
     parser.add_argument('--encoder_dim', type=int, default=768)
     parser.add_argument('--decoder_dim', type=int, default=512)
+    parser.add_argument('--window_size', type=int, default=490)
+    parser.add_argument('--dir1', type=str, default='/space/benfenati/data_folder/SHM/AnomalyDetection_SS335/')
+    parser.add_argument('--dir2', type=str, default='/space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/')
+    parser.add_argument('--dir3', type=str, default='/space/benfenati/data_folder/SHM/Vehicles_Sacertis/')
     args = parser.parse_args()
     print(args)
 
@@ -24,7 +28,7 @@ if __name__ == "__main__":
     save_interval_epochs = 50
 
     # train and val dataset
-    dataset_train = get_all_datasets()
+    dataset_train = get_all_datasets(args.dir1, args.dir2, args.dir3, args.window_size)
     sampler_train = torch.utils.data.RandomSampler(dataset_train)
     data_loader_train = torch.utils.data.DataLoader(
         dataset_train, sampler=sampler_train,

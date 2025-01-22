@@ -11,22 +11,21 @@ import data.Vehicles_Roccaprebalza.get_dataset as Vehicles_Roccaprebalza
 
 dim_filtering = 120
 
-def get_all_datasets():
+def get_all_datasets(dir1: str = None, dir2: str = None, dir3: str = None, window_size: int = 490):
     import os
     os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1, 2, 3"
     print("Creating Training Dataset")
     starting_date = datetime.date(2019,5,22) 
     num_days = 7
-    window_size = 1190
     # uc1 data
-    directory = "/home/benfenati/data_folder/SHM/AnomalyDetection_SS335/"
+    directory = dir1
     data_anomaly = AnomalyDetection_SS335.get_data(directory, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "frequency", windowLength = window_size)
     # uc2 data
-    directory = "/home/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/"
+    directory = dir2
     data_train, _, _, _ = Vehicles_Roccaprebalza.get_data(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = "y_camion")
     data_train_2, _, _, _ = Vehicles_Roccaprebalza.get_data(directory, window_sec_size = 60, shift_sec_size = 2, time_frequency = "frequency", car = "y_car")
     # uc3 data
-    directory = "/home/benfenati/data_folder/SHM/Vehicles_Sacertis/"
+    directory = dir3
     data_sacertis, _ = Vehicles_Sacertis.get_data(directory, True, False, False, time_frequency = "frequency")
     data_all = []
     for data in data_sacertis: data_all.append(data[0])
