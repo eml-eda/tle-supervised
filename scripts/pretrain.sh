@@ -1,6 +1,6 @@
 
 (
-    python pretrain_all_datasets.py \
+    python3 pretrain_all_datasets.py \
         --device 3 \
         --dir1 /space/benfenati/data_folder/SHM/AnomalyDetection_SS335/ \
         --dir2 /space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/ \

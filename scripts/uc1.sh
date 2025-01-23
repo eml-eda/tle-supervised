@@ -1,6 +1,6 @@
 
 (
-    python uc1.py \
+    python3 uc1.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/AnomalyDetection_SS335/ \
         --model soa \
@@ -8,7 +8,7 @@
 ) | tee logs/uc1_soa.log
 
 (
-    python uc1.py \
+    python3 uc1.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/AnomalyDetection_SS335/ \
         --model autoencoder \

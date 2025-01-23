@@ -1,6 +1,6 @@
 
 (
-    python uc2.py \
+    python3 uc2.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/ \
         --model soa \
@@ -8,7 +8,7 @@
 ) | tee logs/uc2_soa_y_car.log
 
 (
-    python uc2.py \
+    python3 uc2.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/ \
         --model soa \
@@ -16,7 +16,7 @@
 ) | tee logs/uc2_soa_y_camion.log
 
 (
-    python uc2.py \
+    python3 uc2.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/ \
         --model autoencoder \
@@ -25,7 +25,7 @@
 ) | tee logs/uc2_autoencoder_y_car.log 
  
 (
-    python uc2.py \
+    python3 uc2.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/ \
         --model autoencoder \

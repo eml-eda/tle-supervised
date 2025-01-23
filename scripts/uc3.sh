@@ -1,6 +1,6 @@
 
 (
-    python uc2.py \
+    python3 uc2.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/Vehicles_Sacertis/ \
         --model soa \
@@ -8,7 +8,7 @@
 
 
 (
-    python uc2.py \
+    python3 uc2.py \
         --device 2 \
         --dir /space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/ \
         --model autoencoder \

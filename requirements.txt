@@ -1,0 +1,11 @@
+torch
+torchvision
+torchaudio
+pandas
+scipy
+scikit-learn
+einops
+timm
+matplotlib
+seaborn
+ipykernel

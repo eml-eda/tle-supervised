@@ -1,3 +1,4 @@
 results/
 logs/
 develop.ipynb
+*.pyc
