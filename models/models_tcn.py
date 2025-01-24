@@ -1,6 +1,8 @@
 # Original model from here (https://github.com/locuslab/TCN/blob/master/TCN/tcn.py)
+import torch
 import torch.nn as nn
 from torch.nn.utils import weight_norm
+from .modules import PatchEmbed
 
 
 class Chomp1d(nn.Module):
@@ -65,7 +67,7 @@ class TemporalConvNet(nn.Module):
 
 # TCN for regression
 class TemporalConvNetRegression(nn.Module):
-    def __init__(self, num_mels=100, mel_len=100, num_channels=[100, 100, 100, 100], kernel_size=2, dropout=0.2):
+    def __init__(self, num_mels=100, mel_len=100, num_channels=[100, 100, 100, 100, 100, 100, 100, 100], kernel_size=2, dropout=0.2):
         super(TemporalConvNetRegression, self).__init__()
         
         self.mel_len = mel_len
@@ -88,13 +90,10 @@ class TemporalConvNetRegression(nn.Module):
         )
 
     def forward(self, x):
-        # nput shape: [batch, channel, mel_len, num_mels]
         batch_size = x.size(0)
-        
-        # emove channel dimension and transpose for TCN
+
         x = x.squeeze(1)  # [batch, mel_len, num_mels]
-        x = x.transpose(1, 2)  # [batch, num_mels, mel_len]
-        
+
         tcn_out = self.tcn(x)  # [batch, final_channels, mel_len]
         
         tcn_out = tcn_out.reshape(batch_size, -1)

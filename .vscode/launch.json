@@ -1,0 +1,22 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "--device", "3",
+                "--dir", "/space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/",
+                "--model", "tcn",
+                // "--pretrain_all", "True",
+                "--car", "y_car",
+            ]
+        }
+    ]
+}

@@ -215,14 +215,16 @@ def main_tcn(args):
         drop_last=True,
     )
 
-    # no pre-train setup
-    model = tcn_regression(
-        num_mels=100,
-        mel_len=100,
-        num_channels=[100, 100, 100, 100],
-        kernel_size=2,
-        dropout=0.2
-    )
+    # # no pre-train setup
+    # model = tcn_regression(
+    #     num_mels=100,
+    #     mel_len=100,
+    #     num_channels=[100, 100, 100, 100],
+    #     kernel_size=2,
+    #     dropout=0.2
+    # )
+
+    model = tcn_regression()
     model.to(device)
     
     ##### Fine-tuning (this is valid for both setup)
@@ -276,4 +278,3 @@ if __name__ == "__main__":
     else: 
         print("Model not found")
         exit(1)
-

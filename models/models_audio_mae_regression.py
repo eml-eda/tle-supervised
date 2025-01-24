@@ -22,7 +22,8 @@ class Transformer(nn.Module):
 
 
 class AudioMaskedAutoencoderViT(nn.Module):
-    """ Masked Autoencoder with VisionTransformer backbone
+    """ 
+    Masked Autoencoder with VisionTransformer backbone
     """
 
     def __init__(self, num_mels=100, mel_len=100, patch_size=5, in_chans=1,  #COMMENT: encoder_depth=12, decoder_depth=16
