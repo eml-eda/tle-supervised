@@ -12,10 +12,10 @@
             "console": "integratedTerminal",
             "args": [
                 "--device", "3",
-                "--dir", "/space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/",
+                // "--dir", "/space/benfenati/data_folder/SHM/Vehicles_Roccaprebalza/",
                 "--model", "tcn",
                 // "--pretrain_all", "True",
-                "--car", "y_car",
+                // "--car", "y_car",
             ]
         }
     ]
