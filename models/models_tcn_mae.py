@@ -1,3 +1,7 @@
+'''
+Implementation of TCN as a Masked Autoencoder-like architecture (this is used during pre-training)
+'''
+
 import torch
 import torch.nn as nn
 from .modules import PatchEmbed, TemporalConvNet

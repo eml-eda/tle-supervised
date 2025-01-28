@@ -1,4 +1,5 @@
 # Roccaprebalza
+import torch
 import os
 import csv
 from data.Vehicles_Roccaprebalza.get_dataset import get_data, get_dataset
@@ -22,12 +23,12 @@ from sklearn.neural_network import MLPRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsRegressor
 
-
-import torch
 from models.models_audio_mae import audioMae_vit_base
 from models.models_audio_mae_regression import audioMae_vit_base_R
-from models.models_tcn_regression import tcn_regression
-from models.models_lstm_regression import lstm_regression
+from models.models_tcn import tcn_regression as tcn_regression_simple
+from models.models_tcn_regression import tcn_regression as tcn_regression_mae
+from models.models_lstm import lstm_regression
+
 import timm
 import timm.optim.optim_factory as optim_factory
 from util.misc import interpolate_pos_embed
@@ -193,6 +194,8 @@ def main_tcn(args):
 
     device = args.device
     device = torch.device(f'cuda:{args.device}')
+    embed_dim = args.encoder_dim
+    decoder_embed_dim = args.decoder_dim
     
     torch.manual_seed(0)
     np.random.seed(0)
@@ -225,8 +228,25 @@ def main_tcn(args):
     #     dropout=0.2
     # )
 
-    model = tcn_regression()
-    model.to(device)
+    if args.no_pretrain == True:
+        model = tcn_regression_simple()
+        model.to(device)
+
+    # Pretrain All Setup
+    elif args.pretrain_all == True:
+        model = tcn_regression_mae(embed_dim=embed_dim, 
+                                   decoder_embed_dim=decoder_embed_dim, 
+                                   mask_ratio = 0.2)
+        model.to(device)
+        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/checkpoint-tcn-pretrain_all-200.pth", map_location='cpu') # tag:change name
+        checkpoint_model = checkpoint['model']
+        # state_dict = model.state_dict()
+        # for k in ['head.weight', 'head.bias']:
+        #     if k in checkpoint_model and checkpoint_model[k].shape != state_dict[k].shape:
+        #         print(f"Removing key {k} from pretrained checkpoint")
+        #         del checkpoint_model[k]
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+        interpolate_pos_embed(model, checkpoint_model)
     
     ##### Fine-tuning (this is valid for both setup)
     # fine-tuning setup
