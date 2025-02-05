@@ -13,7 +13,7 @@ dim_filtering = 120
 
 def get_all_datasets(dir1: str = None, dir2: str = None, dir3: str = None, window_size: int = 490):
     import os
-    # os.environ['CUDA_VISIBLE_DEVICES'] = "0, 1, 2, 3"
+    os.environ['CUDA_VISIBLE_DEVICES'] = "3"
     print("Creating Training Dataset")
     starting_date = datetime.date(2019,5,22) 
     num_days = 7

@@ -14,8 +14,6 @@ import os
 import csv
 from utils import get_all_datasets
 
-CUDA_VISIBLE_DEVICES = 3
-
 import optuna
 
 def objective(trial):
@@ -30,7 +28,7 @@ def objective(trial):
 
     # params setup
     lr = 0.25e-3
-    total_epochs = 10
+    total_epochs = 20
     warmup_epochs = 10
     save_interval_epochs = 100
     model = audioMae_vit_base(embed_dim=embedding_dim[0], 
@@ -55,9 +53,9 @@ def objective(trial):
                             loss_scaler=loss_scaler, epoch=epoch, 
                             name = "{}-{}-{}-{}-{}-{}-pretrain_all".format(encoder_depth, encoder_heads, decoder_depth, decoder_heads, embedding_dim[0], embedding_dim[1]))
             
-    loss, mae = evaluate(data_loader_val, model, device)
+    _, mae = evaluate(data_loader_val, model, device)
 
-    last_row = [encoder_depth, encoder_heads, decoder_depth, decoder_heads, embedding_dim[0], embedding_dim[1], loss, mae]
+    last_row = [encoder_depth, encoder_heads, decoder_depth, decoder_heads, embedding_dim[0], embedding_dim[1], mae]
     with open(filename, 'a', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(last_row)
@@ -75,7 +73,7 @@ if __name__ == "__main__":
 
     # create results file
     filename = '/home/benfenati/code/tle-supervised/results/model_exploration_results.csv' # tag:change name
-    header = ["encoder_depth", "encoder_heads", "decoder_depth", "decoder_heads", "encoder_embedding_dim", "decoder_embedding_dim", "loss", "mae"]
+    header = ["encoder_depth", "encoder_heads", "decoder_depth", "decoder_heads", "encoder_embedding_dim", "decoder_embedding_dim", "mae"]
     if not os.path.exists(filename):
         with open(filename, 'w', newline='') as file:
             writer = csv.writer(file)
@@ -86,11 +84,21 @@ if __name__ == "__main__":
     # train and val dataset
     all_datasets = get_all_datasets(args.dir1, args.dir2, args.dir3, window_size=1190)
 
-    train_size = int(0.8 * len(all_datasets))
-    val_size = (len(all_datasets) - train_size)
-    reduce_train_size = int(0.2 * train_size)
-
-    train_dataset, val_dataset = torch.utils.data.random_split(all_datasets, [train_size, val_size])
+    # reduce amount of data used
+    total_reduced_size = int(0.2 * len(all_datasets))
+    reduced_dataset, _ = torch.utils.data.random_split(
+        all_datasets, 
+        [total_reduced_size, len(all_datasets) - total_reduced_size]
+    )
+    
+    # split reduced dataset into train/val
+    train_size = int(0.8 * len(reduced_dataset))
+    val_size = len(reduced_dataset) - train_size
+    
+    train_dataset, val_dataset = torch.utils.data.random_split(
+        reduced_dataset, 
+        [train_size, val_size]
+    )
 
     sampler_train = torch.utils.data.RandomSampler(train_dataset)
     data_loader_train = torch.utils.data.DataLoader(
