@@ -37,26 +37,54 @@ class CustomSampler(optuna.samplers.BaseSampler):
     def __init__(self, tried_configs):
         self.tried_configs = tried_configs
         self.base_sampler = optuna.samplers.RandomSampler()
+        self.param_distributions = {
+            'encoder_depth': [1, 3, 5, 7],
+            'encoder_heads': [8, 12, 16],
+            'decoder_depth': [2, 4, 6, 8],
+            'decoder_heads': [8, 16, 24],
+            'embed_dim': [(1536, 1024), (768, 512), (384, 256), (192, 128)]
+        }
 
-    def sample_independent(self, study, trial, param_name, param_distribution):
-        return self.base_sampler.sample_independent(study, trial, param_name, param_distribution)
+    def infer_relative_search_space(self, study, trial):
+        return {}  # No relative search space
 
     def sample_relative(self, study, trial, search_space):
+        return {}  # No relative sampling
+
+    def sample_independent(self, study, trial, param_name, param_distribution):
+        # Sample until we find an untried configuration
         while True:
-            params = {}
-            for name, distribution in search_space.items():
-                params[name] = self.base_sampler.sample_independent(study, trial, name, distribution)
+            value = self.base_sampler.sample_independent(study, trial, param_name, param_distribution)
+            current_params = {
+                'encoder_depth': None,
+                'encoder_heads': None,
+                'decoder_depth': None,
+                'decoder_heads': None,
+                'embed_dim': None
+            }
             
+            # Update with existing parameters
+            for k in current_params.keys():
+                if k in trial.params:
+                    current_params[k] = trial.params[k]
+            current_params[param_name] = value
+            
+            # If we don't have all parameters yet, accept the value
+            if None in current_params.values():
+                return value
+                
+            # Check if configuration was already tried
             config = (
-                params['encoder_depth'],
-                params['encoder_heads'],
-                params['decoder_depth'],
-                params['decoder_heads'],
-                params['embed_dim']
+                current_params['encoder_depth'],
+                current_params['encoder_heads'],
+                current_params['decoder_depth'],
+                current_params['decoder_heads'],
+                current_params['embed_dim']
             )
             
             if config not in self.tried_configs:
-                return params
+                return value
+            
 
 def objective(trial):
     encoder_depth = trial.suggest_categorical("encoder_depth", [1, 3, 5, 7])
