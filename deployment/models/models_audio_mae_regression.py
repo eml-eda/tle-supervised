@@ -1,6 +1,5 @@
 import torch
 from torch import nn
-from einops import rearrange
 from .modules import Attention, PreNorm, FeedForward, SwinBlock, PatchEmbed
 from .utils import get_2d_sincos_pos_embed
 import numpy as np

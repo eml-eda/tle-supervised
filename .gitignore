@@ -4,3 +4,4 @@ develop.ipynb
 *.pyc
 old_results/
 *.pth
+*.pyc
