@@ -16,6 +16,48 @@ from utils import get_all_datasets
 
 import optuna
 
+# This is added to test only configuration that have not been tried yet
+def get_tried_configurations(filename):
+    tried_configs = set()
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                config = (
+                    int(row['encoder_depth']),
+                    int(row['encoder_heads']),
+                    int(row['decoder_depth']),
+                    int(row['decoder_heads']),
+                    (int(row['encoder_embedding_dim']), int(row['decoder_embedding_dim']))
+                )
+                tried_configs.add(config)
+    return tried_configs
+
+class CustomSampler(optuna.samplers.BaseSampler):
+    def __init__(self, tried_configs):
+        self.tried_configs = tried_configs
+        self.base_sampler = optuna.samplers.RandomSampler()
+
+    def sample_independent(self, study, trial, param_name, param_distribution):
+        return self.base_sampler.sample_independent(study, trial, param_name, param_distribution)
+
+    def sample_relative(self, study, trial, search_space):
+        while True:
+            params = {}
+            for name, distribution in search_space.items():
+                params[name] = self.base_sampler.sample_independent(study, trial, name, distribution)
+            
+            config = (
+                params['encoder_depth'],
+                params['encoder_heads'],
+                params['decoder_depth'],
+                params['decoder_heads'],
+                params['embed_dim']
+            )
+            
+            if config not in self.tried_configs:
+                return params
+
 def objective(trial):
     encoder_depth = trial.suggest_categorical("encoder_depth", [1, 3, 5, 7])
     encoder_heads = trial.suggest_categorical("encoder_heads", [8, 12, 16])
@@ -118,5 +160,26 @@ if __name__ == "__main__":
     torch.manual_seed(42)
     np.random.seed(42)
 
-    study = optuna.create_study(direction="minimize")  # or "maximize" depending on your metric
-    study.optimize(objective, n_trials=100)
+    ## this is the standard setup
+    # study = optuna.create_study(direction="minimize")  # or "maximize" depending on your metric
+    # study.optimize(objective, n_trials=100)
+
+    ## setup to test only non tested configurations
+    # Get tried configurations
+    tried_configs = get_tried_configurations(filename)
+    
+    # Create study with custom sampler
+    study = optuna.create_study(
+        direction="minimize",
+        sampler=CustomSampler(tried_configs)
+    )
+    
+    # Calculate remaining trials
+    total_combinations = len([1,3,5,7]) * len([8,12,16]) * len([2,4,6,8]) * len([8,16,24]) * len([(1536,1024), (768,512), (384,256), (192,128)])
+    remaining_trials = total_combinations - len(tried_configs)
+    
+    print(f"Total possible combinations: {total_combinations}")
+    print(f"Already tried combinations: {len(tried_configs)}")
+    print(f"Remaining combinations to try: {remaining_trials}")
+    
+    study.optimize(objective, n_trials=remaining_trials)
