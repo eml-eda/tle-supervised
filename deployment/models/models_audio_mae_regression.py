@@ -68,7 +68,6 @@ class AudioMaskedAutoencoderViT(nn.Module):
         #self.fc1 = nn.Linear(embed_dim, self.hiddenSize, bias=True)
         #self.relu = nn.ReLU()
         #self.fc2 = nn.Linear(self.hiddenSize, 1, bias=True)
-
         # --------------------------------------------------------------------------
 
         self.norm_pix_loss = norm_pix_loss
