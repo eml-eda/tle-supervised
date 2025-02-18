@@ -1,4 +1,4 @@
-import torch
+# I took it from [here](https://www.digitalocean.com/community/tutorials/writing-lenet5-from-scratch-in-python)
 import torch.nn as nn
 
 class LeNetRegression(nn.Module):
