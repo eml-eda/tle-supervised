@@ -10,7 +10,6 @@ from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import r2_score
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import f_regression
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import r2_score
@@ -35,7 +34,7 @@ import timm.optim.optim_factory as optim_factory
 from util.misc import interpolate_pos_embed
 import util.misc as misc
 from util.misc import NativeScalerWithGradNormCount as NativeScaler
-from util.engine_pretrain import train_one_epoch, evaluate, train_one_epoch_finetune, evaluate_finetune
+from util.engine_pretrain import train_one_epoch, train_one_epoch_finetune, evaluate_finetune
 import argparse
 import pandas as pd 
 
@@ -359,9 +358,6 @@ def main_lstm(args):
     with open(filename, 'a', encoding='UTF8', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(last_row)
-
-
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')

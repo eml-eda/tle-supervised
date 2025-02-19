@@ -31,6 +31,11 @@ model_tcn = tcn_regression()
 checkpoint_model = checkpoint_tcn['model']
 msg = model_tcn.load_state_dict(checkpoint_model, strict=False)
 
+#%% compiling
+compiled = torch.compile(model_tcn)
+
+#%% count params
+
 # count model parameters
 num_params = sum(p.numel() for p in model_uc1.parameters())
 print(f'Number of parameters UC1: {num_params:,}')

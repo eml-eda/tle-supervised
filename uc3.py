@@ -18,6 +18,13 @@ from sklearn.neighbors import KNeighborsRegressor
 import torch
 from models.models_audio_mae import audioMae_vit_base
 from models.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_tcn import tcn_regression as tcn_regression_simple
+from models.models_tcn_regression import tcn_regression as tcn_regression_mae
+from models.models_lstm import lstm_regression as lstm_regression_simple
+from models.models_lstm_regression import lstm_regression as lstm_regression_mae
+
+
+
 import timm.optim.optim_factory as optim_factory
 
 from util.misc import interpolate_pos_embed
@@ -184,6 +191,158 @@ def main_autoencoder(args):
         writer = csv.writer(f)
         writer.writerow(last_row)
 
+def main_tcn(args):
+    # create results file
+    filename = f'/home/benfenati/code/tle-supervised/results/uc3_results_tcn.csv' # tag:change name
+    header = ["mse", "mae", "r2", "mspe", "mape"]
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+
+    device = args.device
+    device = torch.device(f'cuda:{args.device}')
+    embed_dim = args.encoder_dim
+    decoder_embed_dim = args.decoder_dim
+    
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    if args.no_pretrain == True:
+        model = tcn_regression_simple()
+        model.to(device)
+
+    # Pretrain All Setup
+    elif args.pretrain_all == True:
+        model = tcn_regression_mae(embed_dim=embed_dim, 
+                                   decoder_embed_dim=decoder_embed_dim, 
+                                   mask_ratio = 0.2)
+        model.to(device)
+        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/checkpoint-tcn-pretrain_all-200.pth", map_location='cpu') # tag:change name
+        checkpoint_model = checkpoint['model']
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+    
+    ##### Fine-tuning (this is valid for both setup)
+    # finetuning data
+    dataset = get_dataset(args.dir, False, True, False,  sensor = "None", time_frequency = "frequency")
+    sampler_train = torch.utils.data.RandomSampler(dataset)
+    data_loader_finetune = torch.utils.data.DataLoader(
+        dataset, sampler=sampler_train,
+        batch_size=128,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True)
+    
+    # finetuning setup
+    lr = 0.25e-5
+    total_epochs = 201
+    warmup_epochs = 50
+    save_interval_epochs = 100
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
+    optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+    loss_scaler = NativeScaler()
+    criterion = torch.nn.MSELoss()
+    # fine-tuning training
+    print(f"Start finetuning for {total_epochs} epochs")
+    for epoch in range(0, total_epochs):
+        train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
+        if epoch % save_interval_epochs == 0:
+            misc.save_model(output_dir="/home/benfenati/code/tle-supervised/results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, 
+                            name = f"tcn_sacertis_finetune_{args.no_pretrain}-{args.pretrain_all}")
+
+    ##### Testing
+    dataset = get_dataset(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
+    data_loader_test = torch.utils.data.DataLoader(
+        dataset, shuffle=False,
+        batch_size=1,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )
+    y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
+    mse, mae, r2, mspe, mape = compute_accuracy(y_test, y_predicted)
+
+    last_row = [mse, mae, r2, mspe, mape]
+    with open(filename, 'a', encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(last_row)
+
+def main_lstm(args):
+    # create results file
+    filename = f'/home/benfenati/code/tle-supervised/results/uc3_results_lstm.csv' # tag:change name
+    header = ["mse", "mae", "r2", "mspe", "mape"]
+    if not os.path.exists(filename):
+        with open(filename, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(header)
+
+    device = args.device
+    device = torch.device(f'cuda:{args.device}')
+    embed_dim = args.encoder_dim
+    decoder_embed_dim = args.decoder_dim
+    
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    if args.no_pretrain == True:
+        model = lstm_regression_simple()
+        model.to(device)
+
+    # Pretrain All Setup
+    elif args.pretrain_all == True:
+        model = lstm_regression_mae(embed_dim=embed_dim, 
+                                   decoder_embed_dim=decoder_embed_dim, 
+                                   mask_ratio = 0.2)
+        model.to(device)
+        checkpoint = torch.load(f"/home/benfenati/code/tle-supervised/results/checkpoints/checkpoint-lstm-pretrain_all-200.pth", map_location='cpu') # tag:change name
+        checkpoint_model = checkpoint['model']
+        msg = model.load_state_dict(checkpoint_model, strict=False)
+    
+    ##### Fine-tuning (this is valid for both setup)
+    # finetuning data
+    dataset = get_dataset(args.dir, False, True, False,  sensor = "None", time_frequency = "frequency")
+    sampler_train = torch.utils.data.RandomSampler(dataset)
+    data_loader_finetune = torch.utils.data.DataLoader(
+        dataset, sampler=sampler_train,
+        batch_size=128,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True)
+    
+    # finetuning setup
+    lr = 0.25e-5
+    total_epochs = 201
+    warmup_epochs = 50
+    save_interval_epochs = 100
+    param_groups = optim_factory.param_groups_weight_decay(model, 0.05)
+    optimizer = torch.optim.AdamW(param_groups, lr=lr, betas=(0.9, 0.95))
+    loss_scaler = NativeScaler()
+    criterion = torch.nn.MSELoss()
+    # fine-tuning training
+    print(f"Start finetuning for {total_epochs} epochs")
+    for epoch in range(0, total_epochs):
+        train_stats = train_one_epoch_finetune(model, criterion, data_loader_finetune, optimizer, device, epoch, loss_scaler, lr, total_epochs, warmup_epochs)
+        if epoch % save_interval_epochs == 0:
+            misc.save_model(output_dir="/home/benfenati/code/tle-supervised/results/checkpoints/", model=model, model_without_ddp=model, optimizer=optimizer, loss_scaler=loss_scaler, epoch=epoch, 
+                            name = f"lstm_sacertis_finetune_{args.no_pretrain}-{args.pretrain_all}")
+
+    ##### Testing
+    dataset = get_dataset(args.dir, False, False, True,  sensor = "None", time_frequency = "frequency")
+    data_loader_test = torch.utils.data.DataLoader(
+        dataset, shuffle=False,
+        batch_size=1,
+        num_workers=1,
+        pin_memory='store_true',
+        drop_last=True,
+    )
+    y_predicted, y_test = evaluate_finetune(data_loader_test, model, device)
+    mse, mae, r2, mspe, mape = compute_accuracy(y_test, y_predicted)
+
+    last_row = [mse, mae, r2, mspe, mape]
+    with open(filename, 'a', encoding='UTF8', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(last_row)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Base parameters')
@@ -202,7 +361,10 @@ if __name__ == "__main__":
         main_soa(args)
     elif args.model == "autoencoder": 
         main_autoencoder(args)
+    elif args.model == "tcn":
+        main_tcn(args)
+    elif args.model == "lstm":
+        main_lstm(args)
     else: 
         print("Model not found")
         exit(1)
-
