@@ -21,6 +21,10 @@ model_uc2_car = audioMae_vit_base_R(embed_dim=embed_dim, decoder_embed_dim=decod
 checkpoint_model = checkpoint_uc2_car['model']
 msg = model_uc2_car.load_state_dict(checkpoint_model, strict=False)
 
+embed_dim = 48
+decoder_embed_dim = 32
+model_uc2_car_small = audioMae_vit_base_R(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim, norm_pix_loss=True, mask_ratio = 0.2)
+
 checkpoint_lstm = torch.load("/home/benfenati/code/tle-supervised/results/checkpoints/checkpoint-lstm-y_car_roccaprebalza_finetune-500.pth", map_location='cpu')
 model_lstm = lstm_regression()
 checkpoint_model = checkpoint_lstm['model']
@@ -32,7 +36,7 @@ checkpoint_model = checkpoint_tcn['model']
 msg = model_tcn.load_state_dict(checkpoint_model, strict=False)
 
 #%% compiling
-compiled = torch.compile(model_tcn)
+# compiled = torch.compile(model_tcn)
 
 #%% count params
 
@@ -43,6 +47,10 @@ print(f'Number of parameters UC1: {num_params:,}')
 # count model parameters
 num_params = sum(p.numel() for p in model_uc2_car.parameters())
 print(f'Number of parameters model UC2/UC3: {num_params:,}')
+
+# count model parameters
+num_params = sum(p.numel() for p in model_uc2_car_small.parameters())
+print(f'Number of parameters model UC2/UC3 small: {num_params:,}')
 
 # count model parameters
 num_params = sum(p.numel() for p in model_lstm.parameters())
