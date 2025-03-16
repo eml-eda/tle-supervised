@@ -1,0 +1,10 @@
+Layer,MACs,Percentage
+encoder_lstm,15099494400.0,94.920159590698
+decoder_blocks.attention_block.fn.fn,422707200.0,2.657270092708343
+decoder_embed,314572800.0,1.9775033248062086
+decoder_blocks.mlp_block.fn.fn.net.3,20971520.0,0.13183355498708058
+decoder_blocks.mlp_block.fn.fn.net.0,20971520.0,0.13183355498708058
+decoder_blocks.attention_block.fn.fn.to_qkv,15728640.0,0.09887516624031044
+patch_embed.proj,7680000.0,0.04827888976577658
+decoder_blocks.attention_block.fn.fn.to_out,5242880.0,0.032958388746770144
+fc1,204800.0,0.0012874370604207086
