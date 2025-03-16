@@ -37,7 +37,7 @@ def main_PCA(args):
     num_days = 7
     print("Creating Training Dataset")
     dataset_train = get_data(args.dir, starting_date, num_days, sensor = 'S6.1.3', time_frequency = "time", windowLength = args.window_size)
-    pca = pca_class(input_dim= 490, CF = 32)
+    pca = pca_class(input_dim=1190, CF = 32)
     print("Fitting PCA")
     Ex, Vx, k = pca.fit(dataset_train)
     ### Creating Testing Dataset for Normal Data

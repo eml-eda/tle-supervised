@@ -84,7 +84,7 @@ class Attention(nn.Module):
     def forward(self, x):
         b, n, _, h = *x.shape, self.heads
         qkv = self.to_qkv(x).chunk(3, dim = -1)
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> b h n d', h = h), qkv)
+        q, k, v = map(lambda t: t.reshape(b, n, h, -1).permute(0, 2, 1, 3), qkv)
 
         dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
 

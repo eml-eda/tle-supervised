@@ -1,68 +1,89 @@
+# import packages
 import torch
 import time
 
+from sklearn.feature_selection import SelectKBest
+from sklearn.feature_selection import f_regression
+from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import QuantileTransformer
+from sklearn.svm import SVR
+from sklearn.pipeline import Pipeline
+from sklearn.linear_model import LinearRegression
+from sklearn.neural_network import MLPRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.neighbors import KNeighborsRegressor
+
+from models.pca import pca_class
 from models.models_audio_mae import audioMae_vit_base
 from models.models_audio_mae_regression import audioMae_vit_base_R
+from models.models_tcn_regression import tcn_regression as tcn_regression_mae
+from models.models_lstm_regression import lstm_regression as lstm_regression_mae
 
+# params for the simulation
 embed_dim = 768
 decoder_embed_dim = 512
-ntests = 100
+ntests = 10
 
-## UC1 eval
-data_uc1 = torch.load('/home/pi/shm/data/uc1_data.pth', map_location='cpu')
-model_uc1 = audioMae_vit_base(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim, norm_pix_loss=False)
-checkpoint_uc1 = torch.load('/home/pi/shm/checkpoints/checkpoint-UC1.pth', map_location='cpu')
-checkpoint_model = checkpoint_uc1['model']
-msg = model_uc1.load_state_dict(checkpoint_model, strict=False)
+# define models
+# UC1 
+pca = pca_class(input_dim=1190, CF = 32)
+model_uc1 = audioMae_vit_base(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim, norm_pix_loss=False).half().to('cuda').eval()
 
-model_uc1.half().eval()
+# UC2/3
+steps_svr = [( 'scaler', StandardScaler() ), ('svr', SVR(kernel = 'rbf',epsilon=0.1, C=10))]
+steps_DecisionTreeRegressor = [( 'scaler', StandardScaler()), ('model', DecisionTreeRegressor(max_depth=200))]
+steps_MLPRegressor = [('scaler', QuantileTransformer()), ('model', MLPRegressor(hidden_layer_sizes=(100,100,100)))]
+steps_KNeighborsRegressor = [( 'scaler', StandardScaler() ), ('model', KNeighborsRegressor(n_neighbors=7))]
+steps_BayesianRidge = [( 'scaler', StandardScaler() ), ('model', LinearRegression())]
+steps = [steps_svr, steps_DecisionTreeRegressor, steps_MLPRegressor, steps_KNeighborsRegressor, steps_BayesianRidge]
+names = ["SVR", "DT", "MLP", "KNN", "LR"]
+model_uc2_ours = audioMae_vit_base_R(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim, norm_pix_loss=True, mask_ratio = 0.2).half().to('cuda').eval()
+model_tcn = tcn_regression_mae(embed_dim=embed_dim, decoder_embed_dim=decoder_embed_dim, mask_ratio = 0.2).half().to('cuda').eval()
+model = lstm_regression_mae(embed_dim=embed_dim,decoder_embed_dim=decoder_embed_dim, mask_ratio = 0.2).half().to('cuda').eval()
+
+## define dummy input data
+data= torch.rand(1,1,100,100, dtype=torch.float16).to('cuda')
+
+# dummy warmup
+for _ in range(5):
+    model_uc1(data)
+
+# uc1 profiling
+## pca
 latencies = []
-losses = []
 for _ in range(ntests):
-    samples = data_uc1[0]
-    targets = data_uc1[-1]
     start = time.time()
-    # compute output
-    loss, _, _ = model_uc1  (samples)
+    pca_result_normal  = pca.predict(data, Vx)
     end = time.time()
     latencies.append(end - start)
-print(f'average latency on UC1: {sum(latencies)/len(latencies):.3f} seconds')
+print(f'average latency on UC1-PCA: {sum(latencies)/len(latencies):.3f} seconds')
+## ours
+latencies = []
+for _ in range(ntests):
+    start = time.time()
+    loss, _, _ = model_uc1(data)
+    end = time.time()
+    latencies.append(end - start)
+print(f'average latency on UC1-ours: {sum(latencies)/len(latencies):.3f} seconds')
 
-## UC2 and UC3 eval
-data_uc2_car = torch.load('/home/pi/shm/data/uc2_data_car.pth', map_location='cpu')
-data_uc2_camion = torch.load('/home/pi/shm/data/uc2_data_camion.pth', map_location='cpu')
-data_uc3 = torch.load('/home/pi/shm/data/uc3_data.pth', map_location='cpu')
-data = [data_uc1, data_uc2_car, data_uc2_camion, data_uc3]
-
-checkpoint_uc2_car = torch.load('/home/pi/shm/checkpoints/checkpoint-UC2-car.pth', map_location='cpu')
-checkpoint_uc2_camion = torch.load('/home/pi/shm/checkpoints/checkpoint-UC2-camion.pth', map_location='cpu')
-checkpoint_uc3 = torch.load('/home/pi/shm/checkpoints/checkpoint-UC3.pth', map_location='cpu')
-checkpoints = [checkpoint_uc2_car, checkpoint_uc2_camion, checkpoint_uc3]
-
-model_uc2_car = audioMae_vit_base_R(embed_dim=embed_dim, 
-                                    decoder_embed_dim=decoder_embed_dim, 
-                                    norm_pix_loss=True, mask_ratio = 0.2)
-model_uc2_camion = audioMae_vit_base_R(embed_dim=embed_dim, 
-                                       decoder_embed_dim=decoder_embed_dim, 
-                                       norm_pix_loss=True, mask_ratio = 0.2)
-model_uc3 = audioMae_vit_base_R(embed_dim=embed_dim, 
-                                decoder_embed_dim=decoder_embed_dim, 
-                                norm_pix_loss=True, mask_ratio = 0.2)
-
-models = [model_uc2_car, model_uc2_camion, model_uc3]
-names = ["UC2-car", "UC2-camion", "UC3"]
-for batch, model, checkpoint, name in zip(data, models, checkpoints, names):
-    checkpoint_model = checkpoint['model']
-    msg = model.load_state_dict(checkpoint_model, strict=False)
-    model.half().eval()
+# uc2 profiling
+## soa
+for i, step in enumerate(steps):
+    pipeline = Pipeline(step)
     latencies = []
-    losses = []
     for _ in range(ntests):
-        samples = data_uc1[0]
-        targets = data_uc1[-1]
         start = time.time()
-        # compute output
-        loss, _ = model(samples)
+        y_predicted = pipeline.predict(data)
         end = time.time()
         latencies.append(end - start)
-    print(f'average latency on {name}: {sum(latencies)/len(latencies):.3f} seconds')
+    print(f'average latency on UC2/3-{names[i]} : {sum(latencies)/len(latencies):.3f} seconds')
+
+names_deep = ["ours", "tcn", "lstm"]
+for i, model in enumerate([model_uc2_ours, model_tcn, model]):
+    latencies = []
+    for _ in range(ntests):
+        start = time.time()
+        loss, _ = model(data)
+        end = time.time()
+        latencies.append(end - start)
+    print(f'average latency on UC2/3-{names_deep[i]} : {sum(latencies)/len(latencies):.3f} seconds')
