@@ -1,5 +1,4 @@
-import numpy as np 
-import sklearn.preprocessing
+import numpy as np
 
 mse_w = lambda x, xr: np.mean((x - xr)**2, axis=0)
 mse = lambda x, xr: np.mean(mse_w(x, xr))
@@ -52,7 +51,7 @@ class pca_class:
         for values in np.arange(0, ds.shape[0], interval): #windows of 30 seconds
             section = ds[values:(values+interval),:]
             if section.shape[0]>0: 
-                section = sklearn.preprocessing.scale(section, axis=1, with_mean=True, with_std=False, copy=False)
+                section -= np.mean(section, axis=1, keepdims=True)
                 my_Vx = Vx[:, :self.cf]
                 x_recons = np.linalg.multi_dot([Vx[:, :self.cf], Vx[:, :self.cf].T, section.T])
                 mse_temp =  mse(section, x_recons.T)
