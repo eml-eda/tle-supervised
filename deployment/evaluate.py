@@ -61,7 +61,7 @@ def run_evaluation(ntests=10):
         pca_result_normal = pca.predict(dummy_data_pca, dummy_Vx)
         end = time.time()
         latencies.append(end - start)
-    print(f'avg latency on UC1-PCA: {sum(latencies)/len(latencies):.3f} seconds')
+    print(f'avg latency on UC1-PCA: {sum(latencies)/len(latencies)*1000:.3f} ms')
     ## ours
     latencies = []
     for _ in range(ntests):
@@ -69,7 +69,7 @@ def run_evaluation(ntests=10):
         loss, _, _ = model_uc1(dummy_data_ours)
         end = time.time()
         latencies.append(end - start)
-    print(f'avg latency on UC1-ours: {sum(latencies)/len(latencies):.3f} seconds')
+    print(f'avg latency on UC1-ours: {sum(latencies)/len(latencies)*1000:.3f} ms')
 
     # uc2 profiling
     ## soa
@@ -82,7 +82,7 @@ def run_evaluation(ntests=10):
             y_predicted = pipeline.predict(dummy_data_soa)
             end = time.time()
             latencies.append(end - start)
-        print(f'avg latency on UC2/3-{names[i]} : {sum(latencies)/len(latencies):.3f} seconds')
+        print(f'avg latency on UC2/3-{names[i]} : {sum(latencies)/len(latencies)*1000:.3f} ms')
 
     names_deep = ["ours", "tcn", "lstm"]
     for i, model in enumerate([model_uc2_ours, model_tcn, model]):
@@ -92,7 +92,7 @@ def run_evaluation(ntests=10):
             loss, _ = model(dummy_data_ours)
             end = time.time()
             latencies.append(end - start)
-        print(f'avg latency on UC2/3-{names_deep[i]} : {sum(latencies)/len(latencies):.3f} seconds')
+        print(f'avg latency on UC2/3-{names_deep[i]} : {sum(latencies)/len(latencies) * 1000:.3f} ms')
 
 
 def main():
