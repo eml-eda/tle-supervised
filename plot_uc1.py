@@ -158,8 +158,8 @@ if __name__ == "__main__":
     # plt.show()
     plt.tight_layout()
     # Create the directory if it does not exist
-    os.makedirs("results/images", exist_ok=True)
-    plt.savefig("results/images/Anomaly_detection_Bars.pdf", dpi=600)
+    os.makedirs("images", exist_ok=True)
+    plt.savefig("images/Anomaly_detection_Bars.pdf", dpi=600)
 
     ## --------------------- 2) Reconstruction plot ---------------------
     data_normal = pd.read_csv(directory + "PCA_490samples_normal.csv")
@@ -176,6 +176,6 @@ if __name__ == "__main__":
     compute_threshold_accuracy(data_anomaly.values, data_normal.values, axs[1], min, max)
     axs[1].tick_params(labelsize=12)
     plt.tight_layout()
-    os.makedirs("results/images", exist_ok=True)
-    plt.savefig(f"results/images/Anomaly_detection_MSE.pdf", dpi = 600)
+    os.makedirs("images", exist_ok=True)
+    plt.savefig(f"images/Anomaly_detection_MSE.pdf", dpi = 600)
     # plt.show()
