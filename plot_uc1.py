@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils import *
 from models.models_audio_mae import audioMae_vit_base
+import os
 
 def compute_threshold_accuracy(anomalies, normal, ax, min, max, only_acc = 0, dim_filtering=dim_filtering):
     new_normal = []
@@ -156,6 +157,8 @@ if __name__ == "__main__":
     plt.subplots_adjust(hspace=0.1)
     # plt.show()
     plt.tight_layout()
+    # Create the directory if it does not exist
+    os.makedirs("results/images", exist_ok=True)
     plt.savefig("results/images/Anomaly_detection_Bars.pdf", dpi=600)
 
     ## --------------------- 2) Reconstruction plot ---------------------
@@ -173,5 +176,6 @@ if __name__ == "__main__":
     compute_threshold_accuracy(data_anomaly.values, data_normal.values, axs[1], min, max)
     axs[1].tick_params(labelsize=12)
     plt.tight_layout()
+    os.makedirs("results/images", exist_ok=True)
     plt.savefig(f"results/images/Anomaly_detection_MSE.pdf", dpi = 600)
     # plt.show()
