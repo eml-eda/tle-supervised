@@ -91,7 +91,7 @@ def plot_results_autoencoder(data, data2 , fig):
 
 if __name__ == "__main__":
     
-    directory = "/home/benfenati/code/tle-supervised/results/uc1_results/"
+    directory = "/home/benfenati/code/tle-supervised/old_results/uc1_results/"
     dim_filtering = 120
     # colors = ['#A9D18E', '#9DC3E6']
     colors = ['#73AD4C', '#6BA7DE']
