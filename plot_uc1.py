@@ -49,7 +49,7 @@ def plot_results_PCA(data, data2, fig):
     fig.plot(np.arange(len(new_data2),len(new_data) + len(new_data2)), new_data, label = 'Pre-Intervention Filtered', linewidth = 1.5, color = 'green')
     fig.plot(np.arange(0,len(new_data2)), new_data2, label = 'Post-Intervention Filtered', linewidth = 1.5, color = 'royalblue')
     fig.grid(axis = 'both')
-    fig.set_title('PCA [36]')
+    fig.set_title('PCA [32]')
     # fig.set_xlabel('Time [Input windows]', fontsize=12)
     # fig.set_ylabel('Normalized MSE [#]', fontsize=12)
     fig.set_ylabel('MSE', fontsize=12)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     x = np.arange(5)
     linewidth= 2
     # Plot acc_PCA and acc_enc in the first subplot
-    axs[0].plot(x, sens_PCA, color=colors[0], marker='o', linewidth=linewidth, label='PCA [36]')
+    axs[0].plot(x, sens_PCA, color=colors[0], marker='o', linewidth=linewidth, label='PCA [32]')
     axs[0].plot(x, sens_enc, color=colors[1], marker='x', linewidth=linewidth, label='Ours')
     axs[0].set_ylabel('Sensitivity', fontsize=12)
     axs[0].set_xlabel('Time Window [#]')
@@ -139,7 +139,7 @@ if __name__ == "__main__":
         # ax.xaxis.grid(True)
         ax.tick_params(labelsize=12)
 
-    axs[1].plot(x, spec_PCA, color=colors[0], marker='o', linewidth=linewidth, label='PCA [36]')
+    axs[1].plot(x, spec_PCA, color=colors[0], marker='o', linewidth=linewidth, label='PCA [32]')
     axs[1].plot(x, spec_enc, color=colors[1], marker='x', linewidth=linewidth, label='Ours')
     axs[1].set_ylabel('Specificity', fontsize=12)
     axs[1].set_xlabel('Post-Processing Median Filter length', fontsize=12)
@@ -148,7 +148,7 @@ if __name__ == "__main__":
     # axs[1].set_xticklabels([15, 30, 60, 120, 240])
     # axs[1].set_xlabel('Time Window [#]')
 
-    axs[2].plot(x, acc_PCA, color=colors[0], marker='o', linewidth=linewidth, label='PCA [36]')
+    axs[2].plot(x, acc_PCA, color=colors[0], marker='o', linewidth=linewidth, label='PCA [32]')
     axs[2].plot(x, acc_enc, color=colors[1], marker='x', linewidth=linewidth, label='Ours')
     axs[2].set_ylabel('Accuracy', fontsize=12)
     axs[2].set_xticks(x)
